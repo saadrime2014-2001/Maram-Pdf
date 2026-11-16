@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  Camera,
   FileText,
   ImagePlus,
   Layers,
@@ -32,6 +33,13 @@ export const HomeHub: React.FC<HomeHubProps> = ({
 }) => {
   const tools = [
     {
+      title: 'مسح بالكاميرا (Scan to PDF)',
+      desc: 'صوّر المستندات والوثائق الورقية بكاميرا الهاتف وحوّلها فوراً إلى PDF واضح ومقروء.',
+      icon: Camera,
+      accent: 'bg-rose-50 text-rose-600',
+      onClick: () => onStartConvert('img-to-pdf'),
+    },
+    {
       title: 'تعديل النصوص والصفحات',
       desc: 'عدّل النصوص وخطوطها وألوانها، أدرج صوراً وتوقيعاً، ورتب أو احذف الصفحات.',
       icon: PenLine,
@@ -47,7 +55,7 @@ export const HomeHub: React.FC<HomeHubProps> = ({
     },
     {
       title: 'صور إلى PDF',
-      desc: 'حوّل صور الهاتف أو مسح الكاميرا إلى مستند PDF منسق بمقاس A4.',
+      desc: 'حوّل صور الهاتف إلى مستند PDF منسق بمقاس A4 أو بالحجم الأصلي.',
       icon: ImagePlus,
       accent: 'bg-sky-50 text-sky-700',
       onClick: () => onStartConvert('img-to-pdf'),
@@ -90,11 +98,11 @@ export const HomeHub: React.FC<HomeHubProps> = ({
           </div>
 
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white leading-tight">
-            حرّر، امسح ضوئياً، وحوّل مستنداتك بلمسة واحدة
+            حرّر، امسح بالكاميرا، وحوّل مستنداتك بلمسة واحدة
           </h1>
 
           <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-xl">
-            تحكّم في صفحات PDF، أضف توقيعك ونصوصك، أو حوّل الصور والوثائق الورقية إلى نصوص قابلة للتعديل والبحث بسرعة وخصوصية تامة.
+            صوّر أوراقك بكاميرا الهاتف وحوّلها لملف PDF احترافي، أو عدّل نصوص ومستندات PDF وأضف توقيعك واستخرج النصوص بسرعة وخصوصية تامة.
           </p>
 
           <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -108,10 +116,18 @@ export const HomeHub: React.FC<HomeHubProps> = ({
             </button>
             <button
               type="button"
+              onClick={() => onStartConvert('img-to-pdf')}
+              className="min-h-[48px] px-5 py-3 rounded-xl bg-white/15 hover:bg-white/20 border border-white/20 text-white text-sm font-semibold flex items-center gap-2 cursor-pointer transition-colors"
+            >
+              <Camera className="w-4 h-4 text-rose-300" />
+              <span>سكان بالكاميرا</span>
+            </button>
+            <button
+              type="button"
               onClick={() => onStartConvert('ocr')}
               className="min-h-[48px] px-5 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-white text-sm font-semibold flex items-center gap-2 cursor-pointer transition-colors"
             >
-              <ScanText className="w-4 h-4 text-red-400" />
+              <ScanText className="w-4 h-4 text-amber-300" />
               <span>مسح ضوئي OCR</span>
             </button>
             <button
