@@ -5,6 +5,7 @@ import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import JSZip from 'jszip';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
 import mammoth from 'mammoth';
+import { createWorker } from 'tesseract.js';
 import type {
   ImageAnnotation,
   OcrPageResult,
@@ -287,7 +288,6 @@ async function renderAnnotationsOverlayPng(
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
 
-  // Draw strokes first (highlights then pen)
   for (const ann of annotations) {
     if (ann.type === 'pen' || ann.type === 'highlight') {
       const stroke = ann as StrokeAnnotation;
@@ -308,7 +308,6 @@ async function renderAnnotationsOverlayPng(
     }
   }
 
-  // Draw inserted images & signatures
   for (const ann of annotations) {
     if (ann.type === 'image' || ann.type === 'signature') {
       const imgAnn = ann as ImageAnnotation;
@@ -333,7 +332,6 @@ async function renderAnnotationsOverlayPng(
     }
   }
 
-  // Draw text boxes (with optional whiteout background for modifying existing PDF text)
   for (const ann of annotations) {
     if (ann.type === 'text') {
       const txt = ann as TextAnnotation;
@@ -370,7 +368,6 @@ async function renderAnnotationsOverlayPng(
     }
   }
 
-  // Draw watermark if enabled
   if (watermark && watermark.enabled && watermark.text.trim()) {
     ctx.save();
     ctx.translate(canvas.width / 2, canvas.height / 2);
@@ -435,10 +432,8 @@ export async function applyPageOperationsAndAnnotations(
       if (pageMeta.rotation === 0) {
         pdfPage.drawImage(embedded, { x: 0, y: 0, width, height });
       } else {
-        // Draw rotated overlay matching the page's visual orientation
         const tempDoc = await PDFDocument.create();
         const tp = tempDoc.addPage([visualW, visualH]);
-        // Instead of double-copying, compute placement on unrotated page coordinates
         void tp;
         pdfPage.drawImage(embedded, { x: 0, y: 0, width, height });
       }
@@ -508,7 +503,6 @@ export async function imagesToPdf(
   const A4_H = 841.89;
 
   for (const imgItem of images) {
-    // Convert any image (webp/png/jpg) to clean PNG or JPEG via canvas for reliable embedding
     const normalizedBytes = await convertDataUrlToJpegOrPngBytes(imgItem.dataUrl);
     const embedded = normalizedBytes.isPng
       ? await doc.embedPng(normalizedBytes.bytes)
@@ -782,31 +776,37 @@ export async function runOcrOnImageDataUrl(
   detectedLanguage: string;
   lines: Array<{ text: string; xPercent: number; yPercent: number }>;
 }> {
-  const [header, base64] = dataUrl.split(',');
-  const mimeMatch = header?.match(/data:(.*?);base64/);
-  const mimeType = mimeMatch?.[1] || 'image/jpeg';
-
-  const apiBase = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
-  const res = await fetch(`${apiBase}/api/ocr`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      imageBase64: base64,
-      mimeType,
-      languageHint,
-    }),
+  const imgDimensions = await new Promise<{ w: number; h: number }>((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve({ w: img.naturalWidth || 1000, h: img.naturalHeight || 1000 });
+    img.onerror = () => resolve({ w: 1000, h: 1000 });
+    img.src = dataUrl;
   });
 
-  const payload = await res.json();
-  if (!res.ok) {
-    throw new Error(payload?.error || 'فشل التعرف الضوئي على النص.');
-  }
+  const tessLang = languageHint === 'ar' ? 'ara' : languageHint === 'en' ? 'eng' : 'ara+eng';
+  const worker = await createWorker(tessLang);
 
-  return {
-    fullText: payload.fullText || '',
-    detectedLanguage: payload.detectedLanguage || 'غير محدد',
-    lines: Array.isArray(payload.lines) ? payload.lines : [],
-  };
+  try {
+    const { data } = await worker.recognize(dataUrl);
+    const fullText = (data.text || '').trim();
+    const hasArabic = containsArabic(fullText);
+
+    const lines = (data.lines || [])
+      .filter((l) => l.text && l.text.trim())
+      .map((l) => ({
+        text: l.text.trim(),
+        xPercent: l.bbox ? Math.round((l.bbox.x0 / imgDimensions.w) * 100) : 8,
+        yPercent: l.bbox ? Math.round((l.bbox.y0 / imgDimensions.h) * 100) : 10,
+      }));
+
+    return {
+      fullText,
+      detectedLanguage: hasArabic ? 'العربية' : 'English',
+      lines,
+    };
+  } finally {
+    await worker.terminate();
+  }
 }
 
 export async function buildSearchablePdfFromOcr(
@@ -945,7 +945,6 @@ export async function createSamplePdf(): Promise<Uint8Array> {
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Clean editorial top bar rule
       ctx.fillStyle = '#D92D20';
       ctx.fillRect(90, 95, canvas.width - 180, 6);
 
