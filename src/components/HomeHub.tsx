@@ -237,6 +237,16 @@ export const HomeHub: React.FC<HomeHubProps> = ({
           </a>
         </div>
       </section>
+
+      {/* Developer Credits */}
+      <footer className="pt-4 pb-2 text-center border-t border-slate-200/70 space-y-1">
+        <p className="text-xs font-semibold text-slate-700">
+          تطوير: عبد القادر العواد الحيمودي
+        </p>
+        <p className="text-[11px] text-slate-500 font-medium" dir="ltr">
+          Developed by Abdelkader El aouad El haimoudi
+        </p>
+      </footer>
     </div>
   );
 };
