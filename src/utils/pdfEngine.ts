@@ -6,6 +6,8 @@ import JSZip from 'jszip';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
 import mammoth from 'mammoth';
 import { createWorker } from 'tesseract.js';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 import type {
   ImageAnnotation,
   OcrPageResult,
@@ -1043,7 +1045,36 @@ export async function createSamplePdf(): Promise<Uint8Array> {
   return await doc.save();
 }
 
-export function downloadBlob(blob: Blob, filename: string): void {
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      resolve(result.split(',')[1] || '');
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+export async function downloadBlob(blob: Blob, filename: string): Promise<void> {
+  const isCapacitor = !!(window as Record<string, any>).Capacitor?.isNativePlatform?.();
+  if (isCapacitor) {
+    try {
+      const base64Data = await blobToBase64(blob);
+      await Filesystem.writeFile({
+        path: `WaraqaPDF/${filename}`,
+        data: base64Data,
+        directory: Directory.Documents,
+        recursive: true,
+      });
+      alert(`تم حفظ الملف في المستندات: Documents/WaraqaPDF/${filename}`);
+      return;
+    } catch (e) {
+      console.error('Native save failed, falling back:', e);
+    }
+  }
+
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -1055,6 +1086,27 @@ export function downloadBlob(blob: Blob, filename: string): void {
 }
 
 export async function shareFileIfSupported(blob: Blob, filename: string): Promise<boolean> {
+  const isCapacitor = !!(window as Record<string, any>).Capacitor?.isNativePlatform?.();
+  if (isCapacitor) {
+    try {
+      const base64Data = await blobToBase64(blob);
+      const saved = await Filesystem.writeFile({
+        path: filename,
+        data: base64Data,
+        directory: Directory.Cache,
+      });
+      await Share.share({
+        title: filename,
+        text: 'تم الإنشاء بواسطة تطبيق ورقة PDF',
+        url: saved.uri,
+        dialogTitle: 'مشاركة أو طباعة المستند',
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   if (typeof navigator === 'undefined' || !navigator.share) return false;
   try {
     const file = new File([blob], filename, { type: blob.type || 'application/pdf' });
@@ -1069,4 +1121,31 @@ export async function shareFileIfSupported(blob: Blob, filename: string): Promis
   } catch {
     return false;
   }
+}
+
+export async function printPdfBytes(bytes: Uint8Array, filename = 'document.pdf'): Promise<void> {
+  const blob = new Blob([bytes.buffer as ArrayBuffer], { type: 'application/pdf' });
+  const isCapacitor = !!(window as Record<string, any>).Capacitor?.isNativePlatform?.();
+
+  if (isCapacitor) {
+    const shared = await shareFileIfSupported(blob, filename);
+    if (shared) return;
+  }
+
+  const url = URL.createObjectURL(blob);
+  const iframe = document.createElement('iframe');
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = '0';
+  iframe.src = url;
+  document.body.appendChild(iframe);
+  iframe.onload = () => {
+    setTimeout(() => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+    }, 300);
+  };
 }
