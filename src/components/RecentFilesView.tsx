@@ -3,6 +3,7 @@ import {
   Download,
   FileText,
   PenLine,
+  Printer,
   ScanText,
   Share2,
   Trash2,
@@ -12,6 +13,7 @@ import {
   downloadBlob,
   formatBytes,
   formatRelativeTime,
+  printPdfBytes,
   shareFileIfSupported,
 } from '../utils/pdfEngine';
 
@@ -36,7 +38,7 @@ export const RecentFilesView: React.FC<RecentFilesViewProps> = ({
         <div>
           <h1 className="text-xl font-bold text-slate-900">ملفاتي المحفوظة</h1>
           <p className="text-sm text-slate-500">
-            تُحفظ ملفاتك محلياً على جهازك لفتحها أو مشاركتها في أي وقت
+            تُحفظ ملفاتك محلياً على جهازك لفتحها أو طباعتها أو مشاركتها في أي وقت
           </p>
         </div>
         <button
@@ -87,7 +89,7 @@ export const RecentFilesView: React.FC<RecentFilesViewProps> = ({
                 </div>
               </button>
 
-              <div className="flex items-center justify-end gap-1.5 shrink-0">
+              <div className="flex flex-wrap items-center justify-end gap-1.5 shrink-0">
                 <button
                   type="button"
                   onClick={() => onOpenInEditor(file)}
@@ -101,9 +103,19 @@ export const RecentFilesView: React.FC<RecentFilesViewProps> = ({
                   type="button"
                   onClick={() => onOpenInOcr(file)}
                   aria-label="استخراج النص OCR"
+                  title="استخراج النص OCR"
                   className="min-h-[42px] min-w-[42px] flex items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:bg-white cursor-pointer"
                 >
                   <ScanText className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => printPdfBytes(file.bytes, file.name)}
+                  aria-label="طباعة"
+                  title="طباعة المستند"
+                  className="min-h-[42px] min-w-[42px] flex items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:bg-white cursor-pointer"
+                >
+                  <Printer className="w-4 h-4" />
                 </button>
                 <button
                   type="button"
@@ -121,6 +133,7 @@ export const RecentFilesView: React.FC<RecentFilesViewProps> = ({
                     })
                   }
                   aria-label="مشاركة"
+                  title="مشاركة الملف"
                   className="min-h-[42px] min-w-[42px] flex items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:bg-white cursor-pointer"
                 >
                   <Share2 className="w-4 h-4" />
@@ -134,6 +147,7 @@ export const RecentFilesView: React.FC<RecentFilesViewProps> = ({
                     )
                   }
                   aria-label="تنزيل"
+                  title="حفظ في الهاتف"
                   className="min-h-[42px] min-w-[42px] flex items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:bg-white cursor-pointer"
                 >
                   <Download className="w-4 h-4" />
@@ -142,6 +156,7 @@ export const RecentFilesView: React.FC<RecentFilesViewProps> = ({
                   type="button"
                   onClick={() => onDeleteFile(file.id)}
                   aria-label="حذف"
+                  title="حذف الملف"
                   className="min-h-[42px] min-w-[42px] flex items-center justify-center rounded-xl text-red-600 hover:bg-red-50 cursor-pointer"
                 >
                   <Trash2 className="w-4 h-4" />
