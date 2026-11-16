@@ -496,6 +496,57 @@ export function dataUrlToUint8Array(dataUrl: string): Uint8Array {
   return bytes;
 }
 
+export async function applyDocumentScanFilter(
+  dataUrl: string,
+  mode: 'original' | 'magic-color' | 'bw-scan' = 'magic-color'
+): Promise<string> {
+  if (mode === 'original') return dataUrl;
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth || 1200;
+      canvas.height = img.naturalHeight || 1600;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve(dataUrl);
+        return;
+      }
+
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const d = imageData.data;
+
+      if (mode === 'bw-scan') {
+        const contrast = 1.65;
+        const intercept = 128 * (1 - contrast);
+        for (let i = 0; i < d.length; i += 4) {
+          const gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+          let v = gray * contrast + intercept;
+          if (v > 210) v = 255;
+          v = Math.min(255, Math.max(0, v));
+          d[i] = d[i + 1] = d[i + 2] = v;
+        }
+      } else {
+        const contrast = 1.3;
+        const brightness = 18;
+        const intercept = 128 * (1 - contrast) + brightness;
+        for (let i = 0; i < d.length; i += 4) {
+          d[i] = Math.min(255, Math.max(0, d[i] * contrast + intercept));
+          d[i + 1] = Math.min(255, Math.max(0, d[i + 1] * contrast + intercept));
+          d[i + 2] = Math.min(255, Math.max(0, d[i + 2] * contrast + intercept));
+        }
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+      resolve(canvas.toDataURL('image/jpeg', 0.92));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
 export async function imagesToPdf(
   images: Array<{ dataUrl: string; width: number; height: number }>,
   options: { pageSize: 'a4' | 'fit'; margin: number }
