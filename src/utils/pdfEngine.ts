@@ -768,6 +768,67 @@ export async function textToPdfBytes(text: string, title?: string): Promise<Uint
   return await doc.save();
 }
 
+async function preprocessImageForOcr(dataUrl: string): Promise<{
+  processedUrl: string;
+  width: number;
+  height: number;
+}> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const maxDim = 2200;
+      const minDim = 1200;
+      let w = img.naturalWidth || 1000;
+      let h = img.naturalHeight || 1000;
+
+      if (Math.max(w, h) > maxDim) {
+        const ratio = maxDim / Math.max(w, h);
+        w = Math.round(w * ratio);
+        h = Math.round(h * ratio);
+      } else if (Math.max(w, h) < minDim) {
+        const ratio = minDim / Math.max(w, h);
+        w = Math.round(w * ratio);
+        h = Math.round(h * ratio);
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve({ processedUrl: dataUrl, width: w, height: h });
+        return;
+      }
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+
+      const imageData = ctx.getImageData(0, 0, w, h);
+      const d = imageData.data;
+      const contrast = 1.45;
+      const intercept = 128 * (1 - contrast);
+
+      for (let i = 0; i < d.length; i += 4) {
+        const gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+        const adjusted = Math.min(255, Math.max(0, gray * contrast + intercept));
+        d[i] = adjusted;
+        d[i + 1] = adjusted;
+        d[i + 2] = adjusted;
+      }
+      ctx.putImageData(imageData, 0, 0);
+
+      resolve({
+        processedUrl: canvas.toDataURL('image/png'),
+        width: w,
+        height: h,
+      });
+    };
+    img.onerror = () => resolve({ processedUrl: dataUrl, width: 1000, height: 1000 });
+    img.src = dataUrl;
+  });
+}
+
 export async function runOcrOnImageDataUrl(
   dataUrl: string,
   languageHint: 'auto' | 'ar' | 'en' = 'auto'
@@ -776,18 +837,18 @@ export async function runOcrOnImageDataUrl(
   detectedLanguage: string;
   lines: Array<{ text: string; xPercent: number; yPercent: number }>;
 }> {
-  const imgDimensions = await new Promise<{ w: number; h: number }>((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve({ w: img.naturalWidth || 1000, h: img.naturalHeight || 1000 });
-    img.onerror = () => resolve({ w: 1000, h: 1000 });
-    img.src = dataUrl;
-  });
+  const { processedUrl, width, height } = await preprocessImageForOcr(dataUrl);
 
-  const tessLang = languageHint === 'ar' ? 'ara' : languageHint === 'en' ? 'eng' : 'ara+eng';
+  const tessLang =
+    languageHint === 'ar' ? 'ara' : languageHint === 'en' ? 'eng' : 'ara+eng';
   const worker = await createWorker(tessLang);
 
   try {
-    const { data } = await worker.recognize(dataUrl);
+    await worker.setParameters({
+      preserve_interword_spaces: '1',
+    });
+
+    const { data } = await worker.recognize(processedUrl);
     const fullText = (data.text || '').trim();
     const hasArabic = containsArabic(fullText);
 
@@ -795,8 +856,8 @@ export async function runOcrOnImageDataUrl(
       .filter((l) => l.text && l.text.trim())
       .map((l) => ({
         text: l.text.trim(),
-        xPercent: l.bbox ? Math.round((l.bbox.x0 / imgDimensions.w) * 100) : 8,
-        yPercent: l.bbox ? Math.round((l.bbox.y0 / imgDimensions.h) * 100) : 10,
+        xPercent: l.bbox ? Math.round((l.bbox.x0 / width) * 100) : 8,
+        yPercent: l.bbox ? Math.round((l.bbox.y0 / height) * 100) : 10,
       }));
 
     return {
