@@ -35,19 +35,26 @@ jobs:
 
       - name: Install Capacitor & generate Android project
         run: |
-          npm install --no-save --legacy-peer-deps @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
+          npm install --no-save --legacy-peer-deps @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 @capacitor/filesystem@6 @capacitor/share@6
           npx cap add android
           npx cap sync android
 
-      - name: Configure Zoom & Open With (Abrir con) for PDF
+      - name: Configure Permissions, Zoom & Open With (Abrir con) for PDF
         run: |
           python3 - << 'EOF'
           import glob
 
-          # 1. تعديل AndroidManifest.xml لإضافة ميزة فتح ملفات PDF
+          # 1. تعديل AndroidManifest.xml لإضافة الأذونات وميزة فتح ملفات PDF
           manifest_path = "android/app/src/main/AndroidManifest.xml"
           with open(manifest_path, "r", encoding="utf-8") as f:
               manifest = f.read()
+
+          permissions = """
+              <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+              <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+          """
+          if "WRITE_EXTERNAL_STORAGE" not in manifest:
+              manifest = manifest.replace("<application", permissions + "\n    <application", 1)
 
           pdf_intent = """
                       <intent-filter>
@@ -61,8 +68,9 @@ jobs:
           """
           if "application/pdf" not in manifest:
               manifest = manifest.replace("</activity>", pdf_intent + "\n        </activity>", 1)
-              with open(manifest_path, "w", encoding="utf-8") as f:
-                  f.write(manifest)
+
+          with open(manifest_path, "w", encoding="utf-8") as f:
+              f.write(manifest)
 
           # 2. تعديل MainActivity.java لتفعيل الزووم واستقبال رابط الملف
           main_activities = glob.glob("android/app/src/main/java/**/MainActivity.java", recursive=True)
