@@ -7,6 +7,7 @@ import {
   FilePlus2,
   Minimize2,
   PenLine,
+  Printer,
   RotateCw,
   Scissors,
   Share2,
@@ -28,6 +29,7 @@ import {
   formatBytes,
   getPdfPageCount,
   mergePdfFiles,
+  printPdfBytes,
   renderPdfThumbnails,
   shareFileIfSupported,
   splitAllPagesToZip,
@@ -226,6 +228,15 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
     } finally {
       setBusy(false);
     }
+  };
+
+  const handleShareOrDownload = (bytes: Uint8Array, filename: string) => {
+    const blob = new Blob([bytes.buffer as ArrayBuffer], { type: 'application/pdf' });
+    shareFileIfSupported(blob, filename).then((ok) => {
+      if (!ok) {
+        downloadBlob(blob, filename);
+      }
+    });
   };
 
   // Merge handlers
@@ -451,7 +462,25 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
                 {activePages.length} صفحة نشطة · {formatBytes(activePdf.bytes.byteLength)}
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => printPdfBytes(activePdf.bytes, activePdf.name)}
+                aria-label="طباعة الملف الأصلي"
+                title="طباعة"
+                className="min-h-[42px] min-w-[42px] flex items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
+              >
+                <Printer className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => handleShareOrDownload(activePdf.bytes, activePdf.name)}
+                aria-label="مشاركة الملف الأصلي"
+                title="مشاركة"
+                className="min-h-[42px] min-w-[42px] flex items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
+              >
+                <Share2 className="w-4 h-4" />
+              </button>
               <button
                 type="button"
                 onClick={onSelectNewPdf}
@@ -481,7 +510,7 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
                   {savedOutput.name} · {formatBytes(savedOutput.bytes.byteLength)}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() =>
@@ -493,23 +522,19 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
                   className="min-h-[42px] px-4 rounded-xl bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
                 >
                   <Download className="w-4 h-4" />
-                  <span>تنزيل</span>
+                  <span>حفظ</span>
                 </button>
                 <button
                   type="button"
-                  onClick={() =>
-                    shareFileIfSupported(
-                      new Blob([savedOutput.bytes.buffer as ArrayBuffer], { type: 'application/pdf' }),
-                      savedOutput.name
-                    ).then((ok) => {
-                      if (!ok) {
-                        downloadBlob(
-                          new Blob([savedOutput.bytes.buffer as ArrayBuffer], { type: 'application/pdf' }),
-                          savedOutput.name
-                        );
-                      }
-                    })
-                  }
+                  onClick={() => printPdfBytes(savedOutput.bytes, savedOutput.name)}
+                  className="min-h-[42px] px-4 rounded-xl bg-white border border-emerald-300 text-emerald-900 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>طباعة</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleShareOrDownload(savedOutput.bytes, savedOutput.name)}
                   className="min-h-[42px] px-4 rounded-xl bg-white border border-emerald-300 text-emerald-900 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
                 >
                   <Share2 className="w-4 h-4" />
@@ -707,19 +732,37 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
               <span>دمج {mergeList.length} ملفات</span>
             </button>
             {mergedResult && (
-              <button
-                type="button"
-                onClick={() =>
-                  downloadBlob(
-                    new Blob([mergedResult.bytes.buffer as ArrayBuffer], { type: 'application/pdf' }),
-                    mergedResult.name
-                  )
-                }
-                className="min-h-[48px] px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-semibold flex items-center gap-2 cursor-pointer"
-              >
-                <Download className="w-4 h-4" />
-                <span>تنزيل ({formatBytes(mergedResult.bytes.byteLength)})</span>
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() =>
+                    downloadBlob(
+                      new Blob([mergedResult.bytes.buffer as ArrayBuffer], { type: 'application/pdf' }),
+                      mergedResult.name
+                    )
+                  }
+                  className="min-h-[48px] px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-semibold flex items-center gap-2 cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>حفظ ({formatBytes(mergedResult.bytes.byteLength)})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => printPdfBytes(mergedResult.bytes, mergedResult.name)}
+                  className="min-h-[48px] px-4 py-2.5 rounded-xl border border-slate-200 text-slate-800 text-sm font-semibold flex items-center gap-2 cursor-pointer hover:bg-slate-50"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>طباعة</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleShareOrDownload(mergedResult.bytes, mergedResult.name)}
+                  className="min-h-[48px] px-4 py-2.5 rounded-xl border border-slate-200 text-slate-800 text-sm font-semibold flex items-center gap-2 cursor-pointer hover:bg-slate-50"
+                >
+                  <Share2 className="w-4 h-4" />
+                  <span>مشاركة</span>
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -861,19 +904,37 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
                   %)
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() =>
-                  downloadBlob(
-                    new Blob([compressedResult.bytes.buffer as ArrayBuffer], { type: 'application/pdf' }),
-                    compressedResult.name
-                  )
-                }
-                className="min-h-[42px] px-4 rounded-xl bg-slate-900 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
-              >
-                <Download className="w-4 h-4" />
-                <span>تنزيل</span>
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    downloadBlob(
+                      new Blob([compressedResult.bytes.buffer as ArrayBuffer], { type: 'application/pdf' }),
+                      compressedResult.name
+                    )
+                  }
+                  className="min-h-[42px] px-4 rounded-xl bg-slate-900 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>حفظ</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => printPdfBytes(compressedResult.bytes, compressedResult.name)}
+                  className="min-h-[42px] px-3.5 rounded-xl bg-white border border-slate-200 text-slate-800 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>طباعة</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleShareOrDownload(compressedResult.bytes, compressedResult.name)}
+                  className="min-h-[42px] px-3.5 rounded-xl bg-white border border-slate-200 text-slate-800 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Share2 className="w-4 h-4" />
+                  <span>مشاركة</span>
+                </button>
+              </div>
             </div>
           )}
         </div>
