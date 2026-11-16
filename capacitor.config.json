@@ -1,11 +1,8 @@
 {
   "appId": "com.waraqa.pdf",
-  "appName": "ورقة PDF",
+  "appName": "Waraqa PDF",
   "webDir": "dist",
-  "bundledWebRuntime": false,
-  "android": {
-    "allowMixedContent": true,
-    "captureInput": true,
-    "webContentsDebuggingEnabled": false
+  "server": {
+    "androidScheme": "https"
   }
 }
