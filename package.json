@@ -1,7 +1,8 @@
 {
-  "name": "react-example",
+  "name": "waraqa-pdf",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "author": "Abdelkader El aouad El haimoudi",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
@@ -12,6 +13,9 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/filesystem": "^6.0.0",
+    "@capacitor/share": "^6.0.0",
     "@google/genai": "^3.3.0",
     "@pdf-lib/fontkit": "^1.1.1",
     "@tailwindcss/vite": "^4.3.3",
