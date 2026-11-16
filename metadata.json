@@ -1,0 +1,6 @@
+{
+  "name": "ورقة PDF",
+  "description": "تطبيق محمول لتحويل ملفات PDF وتعديلها والتعرف الضوئي على النصوص (OCR) بسهولة عبر الهاتف.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
