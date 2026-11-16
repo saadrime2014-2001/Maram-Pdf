@@ -26,7 +26,7 @@ jobs:
           java-version: '17'
 
       - name: Install web dependencies
-        run: npm install
+        run: npm install --legacy-peer-deps
 
       - name: Build web bundle
         env:
@@ -35,12 +35,13 @@ jobs:
 
       - name: Install Capacitor & generate Android project
         run: |
-          npm install --no-save @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
+          npm install --no-save --legacy-peer-deps @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
           npx cap add android
           npx cap sync android
 
       - name: Copy app icons to Android resources
         run: |
+          sudo apt-get update && sudo apt-get install -y imagemagick
           for density in mdpi:48 hdpi:72 xhdpi:96 xxhdpi:144 xxxhdpi:192; do
             folder="${density%%:*}"
             size="${density##*:}"
