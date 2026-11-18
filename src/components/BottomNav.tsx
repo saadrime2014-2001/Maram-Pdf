@@ -4,24 +4,55 @@ import type { AppSection } from '../types/pdf';
 
 interface BottomNavProps {
   activeSection: AppSection;
+  currentLang: 'ar' | 'en' | 'fr' | 'es';
   onNavigate: (section: AppSection) => void;
   fileCount: number;
 }
 
+const translations = {
+  ar: {
+    home: 'الرئيسية',
+    convert: 'تحويل / Convert',
+    edit: 'تعديل',
+    files: 'ملفاتي',
+  },
+  en: {
+    home: 'Home',
+    convert: 'Convert',
+    edit: 'Edit',
+    files: 'Files',
+  },
+  fr: {
+    home: 'Accueil',
+    convert: 'Convertir',
+    edit: 'Éditer',
+    files: 'Fichiers',
+  },
+  es: {
+    home: 'Inicio',
+    convert: 'Convertir',
+    edit: 'Editar',
+    files: 'Archivos',
+  },
+};
+
 export const BottomNav: React.FC<BottomNavProps> = ({
   activeSection,
+  currentLang,
   onNavigate,
   fileCount,
 }) => {
+  const t = translations[currentLang];
+
   const tabs: Array<{
     id: AppSection;
     label: string;
     icon: React.ComponentType<{ className?: string }>;
   }> = [
-    { id: 'home', label: 'الرئيسية', icon: Home },
-    { id: 'convert', label: 'تحويل', icon: RefreshCw },
-    { id: 'edit', label: 'تعديل', icon: PenLine },
-    { id: 'files', label: 'ملفاتي', icon: FolderOpen },
+    { id: 'home', label: t.home, icon: Home },
+    { id: 'convert', label: t.convert, icon: RefreshCw },
+    { id: 'edit', label: t.edit, icon: PenLine },
+    { id: 'files', label: t.files, icon: FolderOpen },
   ];
 
   return (
@@ -50,7 +81,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                   </span>
                 )}
               </div>
-              <span className="text-[11px] font-medium tracking-tight whitespace-nowrap">
+              <span className="text-[10px] sm:text-[11px] font-medium tracking-tight whitespace-nowrap">
                 {tab.label}
               </span>
             </button>
