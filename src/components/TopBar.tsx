@@ -20,6 +20,14 @@ const navLabels = {
   es: { home: 'Inicio', convert: 'Convertidor', edit: 'Editor', files: 'Mis Archivos', openPdf: 'Abrir PDF', newFile: 'Nuevo' },
 };
 
+// الأسماء الكاملة للغات لتلفت انتباه المستخدم
+const langNames: Record<'ar' | 'en' | 'fr' | 'es', string> = {
+  ar: 'Arabic',
+  en: 'English',
+  fr: 'French',
+  es: 'Spanish',
+};
+
 export const TopBar: React.FC<TopBarProps> = ({
   activeSection,
   onNavigate,
@@ -71,7 +79,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         </nav>
 
         <div className="flex items-center gap-3">
-          {/* محدد اللغة */}
+          {/* محدد اللغة مع الأسماء الإنجليزية */}
           <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
             <Globe className="w-4 h-4 text-slate-500 mx-1" />
             {(['ar', 'en', 'fr', 'es'] as const).map((l) => (
@@ -79,11 +87,12 @@ export const TopBar: React.FC<TopBarProps> = ({
                 key={l}
                 type="button"
                 onClick={() => onLanguageChange(l)}
-                className={`px-2 py-1 text-xs font-bold rounded-lg uppercase transition-colors ${
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg uppercase transition-colors flex items-center gap-1 ${
                   currentLang === l ? 'bg-red-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                {l}
+                <span>{l}</span>
+                <span className="text-[10px] opacity-80 normal-case hidden xl:inline">({langNames[l]})</span>
               </button>
             ))}
           </div>
@@ -132,16 +141,16 @@ export const TopBar: React.FC<TopBarProps> = ({
               >
                 ورقة PDF
               </button>
-              {/* محدد لغة مصغر للهاتف */}
+              {/* محدد لغة مصغر للهاتف مع الأسماء الإنجليزية */}
               <select
                 value={currentLang}
                 onChange={(e) => onLanguageChange(e.target.value as any)}
-                className="bg-slate-100 border border-slate-200 text-slate-800 text-xs font-bold rounded-lg px-1.5 py-1 focus:outline-none"
+                className="bg-slate-100 border border-slate-200 text-slate-800 text-xs font-bold rounded-lg px-2 py-1 focus:outline-none"
               >
-                <option value="ar">AR</option>
-                <option value="en">EN</option>
-                <option value="fr">FR</option>
-                <option value="es">ES</option>
+                <option value="ar">AR - Arabic</option>
+                <option value="en">EN - English</option>
+                <option value="fr">FR - French</option>
+                <option value="es">ES - Spanish</option>
               </select>
             </div>
             <button
