@@ -34,6 +34,7 @@ import {
 interface ConverterStudioProps {
   initialMode: ConvertMode;
   activePdf: { name: string; bytes: Uint8Array } | null;
+  currentLang: 'ar' | 'en' | 'fr' | 'es';
   onSaveToHistory: (
     name: string,
     bytes: Uint8Array,
@@ -52,21 +53,243 @@ interface ImageQueueItem {
   height: number;
 }
 
-const MODES: Array<{ id: ConvertMode; label: string }> = [
-  { id: 'img-to-pdf', label: 'صور ← PDF' },
-  { id: 'ocr', label: 'التعرف الضوئي OCR' },
-  { id: 'pdf-to-img', label: 'PDF ← صور' },
-  { id: 'pdf-to-word', label: 'PDF ← Word' },
-  { id: 'word-to-pdf', label: 'Word / نص ← PDF' },
-];
+const translations = {
+  ar: {
+    modes: [
+      { id: 'img-to-pdf', label: 'صور ← PDF' },
+      { id: 'ocr', label: 'التعرف الضوئي OCR' },
+      { id: 'pdf-to-img', label: 'PDF ← صور' },
+      { id: 'pdf-to-word', label: 'PDF ← Word' },
+      { id: 'word-to-pdf', label: 'Word / نص ← PDF' },
+    ],
+    processing: 'جاري المعالجة...',
+    wait: 'يرجى الانتظار',
+    // Mode 1
+    imgToPdfTitle: 'تحويل الصور إلى ملف PDF',
+    imgToPdfDesc: 'التقط صوراً بالكاميرا أو اختر من معرض الهاتف ورتبها بسهولة',
+    camera: 'الكاميرا',
+    addImages: 'إضافة صور',
+    pickImagesPrompt: 'اضغط لاختيار الصور من جهازك',
+    pageSize: 'مقاس الصفحة',
+    standardA4: 'A4 قياسي',
+    imageSize: 'مقاس الصورة',
+    margins: 'الهوامش',
+    noMargin: 'بدون',
+    normalMargin: 'عادي',
+    wideMargin: 'واسع',
+    createPdf: 'إنشاء ملف PDF',
+    download: 'تنزيل',
+    share: 'مشاركة',
+    openInEditor: 'فتح الملف في المحرر',
+    // OCR
+    ocrTitle: 'التعرف الضوئي على النص (OCR)',
+    ocrDesc: 'استخرج النصوص العربية والإنجليزية من الصور أو ملفات PDF الممسوحة ضوئياً وحوّلها إلى مستند قابل للبحث والتحرير.',
+    shootPage: 'تصوير صفحة',
+    imageOrPdf: 'صورة أو PDF',
+    docLang: 'لغة المستند',
+    auto: 'تلقائي',
+    arabic: 'العربية',
+    english: 'English',
+    extractTextNow: 'استخراج النص الآن',
+    editableText: 'النص المستخرج القابل للتعديل',
+    copy: 'نسخ',
+    createSearchablePdf: 'إنشاء PDF قابل للبحث والنسخ',
+    exportWord: 'تصدير Word (.docx)',
+    downloadTxt: 'تنزيل نص (.txt)',
+    cleanTextPdf: 'PDF نصي نظيف',
+    // PDF to Images
+    pdfToImgTitle: 'تحويل PDF إلى صور',
+    changeFile: 'تغيير الملف',
+    selectPdf: 'اختيار PDF',
+    convertNow: 'تحويل الآن',
+    downloadAllZip: 'تنزيل الكل (ZIP)',
+    // PDF to Word
+    pdfToWordTitle: 'تحويل PDF إلى Word أو نص',
+    extractTexts: 'استخراج النصوص',
+    ocrHint: 'الملف ممسوح كصورة؟ جرّب OCR',
+    // Word to PDF
+    wordToPdfTitle: 'تحويل Word أو نص إلى PDF',
+    wordToPdfDesc: 'ارفع ملف DOCX أو TXT أو اكتب مستندك مباشرة بخط عربي واضح',
+    uploadWordTxt: 'رفع ملف Word / TXT',
+    docTitlePlaceholder: 'عنوان المستند (اختياري)',
+    docTextPlaceholder: 'اكتب أو الصق النص هنا لتحويله إلى صفحات PDF منسقة...',
+  },
+  en: {
+    modes: [
+      { id: 'img-to-pdf', label: 'Images → PDF' },
+      { id: 'ocr', label: 'OCR Scan' },
+      { id: 'pdf-to-img', label: 'PDF → Images' },
+      { id: 'pdf-to-word', label: 'PDF → Word' },
+      { id: 'word-to-pdf', label: 'Word / Text → PDF' },
+    ],
+    processing: 'Processing...',
+    wait: 'Please wait',
+    imgToPdfTitle: 'Convert Images to PDF',
+    imgToPdfDesc: 'Capture photos with camera or choose from gallery and arrange easily',
+    camera: 'Camera',
+    addImages: 'Add Images',
+    pickImagesPrompt: 'Click to choose images from device',
+    pageSize: 'Page Size',
+    standardA4: 'Standard A4',
+    imageSize: 'Image Size',
+    margins: 'Margins',
+    noMargin: 'None',
+    normalMargin: 'Normal',
+    wideMargin: 'Wide',
+    createPdf: 'Create PDF',
+    download: 'Download',
+    share: 'Share',
+    openInEditor: 'Open in Editor',
+    ocrTitle: 'Optical Character Recognition (OCR)',
+    ocrDesc: 'Extract multilingual texts from images or scanned PDFs into editable & searchable docs.',
+    shootPage: 'Shoot Page',
+    imageOrPdf: 'Image or PDF',
+    docLang: 'Document Language',
+    auto: 'Auto',
+    arabic: 'Arabic',
+    english: 'English',
+    extractTextNow: 'Extract Text Now',
+    editableText: 'Extracted Editable Text',
+    copy: 'Copy',
+    createSearchablePdf: 'Create Searchable PDF',
+    exportWord: 'Export Word (.docx)',
+    downloadTxt: 'Download Text (.txt)',
+    cleanTextPdf: 'Clean Text PDF',
+    pdfToImgTitle: 'Convert PDF to Images',
+    changeFile: 'Change File',
+    selectPdf: 'Select PDF',
+    convertNow: 'Convert Now',
+    downloadAllZip: 'Download All (ZIP)',
+    pdfToWordTitle: 'Convert PDF to Word or Text',
+    extractTexts: 'Extract Texts',
+    ocrHint: 'Scanned file? Try OCR',
+    wordToPdfTitle: 'Convert Word or Text to PDF',
+    wordToPdfDesc: 'Upload DOCX, TXT or type your document directly',
+    uploadWordTxt: 'Upload Word / TXT',
+    docTitlePlaceholder: 'Document title (optional)',
+    docTextPlaceholder: 'Type or paste text here to format into PDF pages...',
+  },
+  fr: {
+    modes: [
+      { id: 'img-to-pdf', label: 'Images → PDF' },
+      { id: 'ocr', label: 'Scan OCR' },
+      { id: 'pdf-to-img', label: 'PDF → Images' },
+      { id: 'pdf-to-word', label: 'PDF → Word' },
+      { id: 'word-to-pdf', label: 'Word / Texte → PDF' },
+    ],
+    processing: 'Traitement en cours...',
+    wait: 'Veuillez patienter',
+    imgToPdfTitle: 'Convertir des images en PDF',
+    imgToPdfDesc: 'Capturez des photos ou choisissez depuis la galerie et organisez',
+    camera: 'Caméra',
+    addImages: 'Ajouter des images',
+    pickImagesPrompt: 'Cliquez pour choisir des images',
+    pageSize: 'Format de page',
+    standardA4: 'A4 Standard',
+    imageSize: 'Taille originale',
+    margins: 'Marges',
+    noMargin: 'Aucune',
+    normalMargin: 'Normale',
+    wideMargin: 'Large',
+    createPdf: 'Créer le PDF',
+    download: 'Télécharger',
+    share: 'Partager',
+    openInEditor: 'Ouvrir dans l’éditeur',
+    ocrTitle: 'Reconnaissance optique de caractères (OCR)',
+    ocrDesc: 'Extrayez du texte multilingue d’images ou de PDF scannés.',
+    shootPage: 'Prendre une photo',
+    imageOrPdf: 'Image ou PDF',
+    docLang: 'Langue du document',
+    auto: 'Auto',
+    arabic: 'Arabe',
+    english: 'Anglais',
+    extractTextNow: 'Extraire le texte',
+    editableText: 'Texte extrait modifiable',
+    copy: 'Copier',
+    createSearchablePdf: 'Créer un PDF interrogeable',
+    exportWord: 'Exporter Word (.docx)',
+    downloadTxt: 'Télécharger Texte (.txt)',
+    cleanTextPdf: 'PDF texte propre',
+    pdfToImgTitle: 'Convertir PDF en images',
+    changeFile: 'Changer de fichier',
+    selectPdf: 'Sélectionner un PDF',
+    convertNow: 'Convertir',
+    downloadAllZip: 'Tout télécharger (ZIP)',
+    pdfToWordTitle: 'Convertir PDF en Word ou Texte',
+    extractTexts: 'Extraire les textes',
+    ocrHint: 'Fichier scanné ? Essayez l’OCR',
+    wordToPdfTitle: 'Convertir Word ou Texte en PDF',
+    wordToPdfDesc: 'Téléchargez un fichier DOCX, TXT ou tapez directement',
+    uploadWordTxt: 'Télécharger Word / TXT',
+    docTitlePlaceholder: 'Titre du document (optionnel)',
+    docTextPlaceholder: 'Tapez ou collez le texte ici...',
+  },
+  es: {
+    modes: [
+      { id: 'img-to-pdf', label: 'Imágenes → PDF' },
+      { id: 'ocr', label: 'Escaneo OCR' },
+      { id: 'pdf-to-img', label: 'PDF → Imágenes' },
+      { id: 'pdf-to-word', label: 'PDF → Word' },
+      { id: 'word-to-pdf', label: 'Word / Texto → PDF' },
+    ],
+    processing: 'Procesando...',
+    wait: 'Por favor espere',
+    imgToPdfTitle: 'Convertir imágenes a PDF',
+    imgToPdfDesc: 'Captura fotos con la cámara o elige de la galería y organízalas',
+    camera: 'Cámara',
+    addImages: 'Añadir imágenes',
+    pickImagesPrompt: 'Haz clic para elegir imágenes',
+    pageSize: 'Tamaño de página',
+    standardA4: 'A4 Estándar',
+    imageSize: 'Tamaño de imagen',
+    margins: 'Márgenes',
+    noMargin: 'Ninguno',
+    normalMargin: 'Normal',
+    wideMargin: 'Ancho',
+    createPdf: 'Crear PDF',
+    download: 'Descargar',
+    share: 'Compartir',
+    openInEditor: 'Abrir en el editor',
+    ocrTitle: 'Reconocimiento óptico de caracteres (OCR)',
+    ocrDesc: 'Extrae textos multilingües de imágenes o PDFs escaneados de forma editable.',
+    shootPage: 'Capturar página',
+    imageOrPdf: 'Imagen o PDF',
+    docLang: 'Idioma del documento',
+    auto: 'Automático',
+    arabic: 'Árabe',
+    english: 'Inglés',
+    extractTextNow: 'Extraer texto ahora',
+    editableText: 'Texto extraído editable',
+    copy: 'Copiar',
+    createSearchablePdf: 'Crear PDF con capacidad de búsqueda',
+    exportWord: 'Exportar Word (.docx)',
+    downloadTxt: 'Descargar texto (.txt)',
+    cleanTextPdf: 'PDF de texto limpio',
+    pdfToImgTitle: 'Convertir PDF a imágenes',
+    changeFile: 'Cambiar archivo',
+    selectPdf: 'Seleccionar PDF',
+    convertNow: 'Convertir ahora',
+    downloadAllZip: 'Descargar todo (ZIP)',
+    pdfToWordTitle: 'Convertir PDF a Word o Texto',
+    extractTexts: 'Extraer textos',
+    ocrHint: '¿Archivo escaneado? Prueba OCR',
+    wordToPdfTitle: 'Convertir Word o Texto a PDF',
+    wordToPdfDesc: 'Sube un archivo DOCX, TXT o escribe tu documento directamente',
+    uploadWordTxt: 'Subir Word / TXT',
+    docTitlePlaceholder: 'Título del documento (opcional)',
+    docTextPlaceholder: 'Escribe o pega el texto aquí para formatearlo en PDF...',
+  },
+};
 
 export const ConverterStudio: React.FC<ConverterStudioProps> = ({
   initialMode,
   activePdf,
+  currentLang,
   onSaveToHistory,
   onNotify,
   onOpenPdfInEditor,
 }) => {
+  const t = translations[currentLang];
   const [mode, setMode] = useState<ConvertMode>(initialMode);
   const [busy, setBusy] = useState(false);
   const [progressMsg, setProgressMsg] = useState('');
@@ -175,12 +398,12 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
   const handleConvertImagesToPdf = async () => {
     if (imgQueue.length === 0) return;
     setBusy(true);
-    setProgressMsg('جاري تحويل الصور إلى PDF...');
+    setProgressMsg(t.processing);
     try {
       const bytes = await imagesToPdf(imgQueue, { pageSize, margin });
-      const fileName = `صور_مجمعة_${Date.now().toString().slice(-4)}.pdf`;
+      const fileName = `images_${Date.now().toString().slice(-4)}.pdf`;
       setImgPdfResult({ name: fileName, bytes });
-      await onSaveToHistory(fileName, bytes, imgQueue.length, 'تحويل من صور');
+      await onSaveToHistory(fileName, bytes, imgQueue.length, 'Images to PDF');
       onNotify('success', 'تم تحويل الصور إلى ملف PDF بنجاح.');
     } catch {
       onNotify('error', 'حدث خطأ أثناء إنشاء ملف PDF.');
@@ -204,7 +427,7 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
   const handlePdfToImages = async () => {
     if (!currentPdf) return;
     setBusy(true);
-    setProgressMsg('جاري تصدير صفحات PDF كصور...');
+    setProgressMsg(t.processing);
     try {
       const imgs = await pdfToImages(currentPdf.bytes, imgFormat, 2);
       setExportedImages(imgs);
@@ -227,17 +450,14 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
   const handleExtractDigitalText = async () => {
     if (!currentPdf) return;
     setBusy(true);
-    setProgressMsg('جاري استخراج النصوص...');
+    setProgressMsg(t.processing);
     try {
       const pages = await extractTextFromPdf(currentPdf.bytes);
       setExtractedPages(pages);
       const joined = pages.map((p) => p.text).filter(Boolean).join('\n\n');
       setEditableText(joined);
       if (!joined.trim()) {
-        onNotify(
-          'info',
-          'هذا الملف يبدو ممسوحاً ضوئياً كصور. استخدم تبويب التعرف الضوئي OCR لقراءته.'
-        );
+        onNotify('info', 'هذا الملف يبدو ممسوحاً ضوئياً كصور. استخدم تبويب التعرف الضوئي OCR.');
       } else {
         onNotify('success', 'تم استخراج النصوص بنجاح.');
       }
@@ -266,7 +486,7 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
     setBusy(true);
-    setProgressMsg('جاري قراءة المستند...');
+    setProgressMsg(t.processing);
     try {
       const ext = file.name.split('.').pop()?.toLowerCase();
       if (ext === 'docx') {
@@ -281,7 +501,7 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
       setTextPdfResult(null);
       onNotify('success', 'تم استيراد محتوى المستند.');
     } catch {
-      onNotify('error', 'تعذر قراءة الملف. تأكد من أنه بصيغة DOCX أو TXT.');
+      onNotify('error', 'تعذر قراءة الملف.');
     } finally {
       setBusy(false);
       setProgressMsg('');
@@ -290,18 +510,15 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
   };
 
   const handleBuildPdfFromText = async () => {
-    if (!docText.trim()) {
-      onNotify('info', 'أدخل نصاً أو ارفع ملف Word أولاً.');
-      return;
-    }
+    if (!docText.trim()) return;
     setBusy(true);
-    setProgressMsg('جاري إنشاء ملف PDF...');
+    setProgressMsg(t.processing);
     try {
       const bytes = await textToPdfBytes(docText, docTitle);
       const count = await getPdfPageCount(bytes);
-      const name = `${docTitle.trim() || 'مستند_محول'}.pdf`;
+      const name = `${docTitle.trim() || 'document'}.pdf`;
       setTextPdfResult({ name, bytes });
-      await onSaveToHistory(name, bytes, count, 'تحويل من نص/Word');
+      await onSaveToHistory(name, bytes, count, 'Text to PDF');
       onNotify('success', 'تم إنشاء ملف PDF بنجاح.');
     } catch {
       onNotify('error', 'حدث خطأ أثناء إنشاء ملف PDF.');
@@ -311,7 +528,6 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
     }
   };
 
-  // OCR handlers
   const handleSelectOcrFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setOcrResults([]);
@@ -327,7 +543,7 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
       const imgs = await Promise.all(Array.from(files).map(readFileAsDataUrl));
       setOcrSource({
         kind: 'images',
-        name: imgs.length === 1 ? imgs[0].name : `${imgs.length}_صور_ممسوحة`,
+        name: imgs.length === 1 ? imgs[0].name : `${imgs.length}_images`,
         images: imgs,
       });
     }
@@ -354,7 +570,7 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
       const results: OcrPageResult[] = [];
       if (src.kind === 'images') {
         for (let i = 0; i < src.images.length; i++) {
-          setProgressMsg(`التعرف الضوئي على الصورة ${i + 1} من ${src.images.length}...`);
+          setProgressMsg(`${t.processing} (${i + 1}/${src.images.length})`);
           const res = await runOcrOnImageDataUrl(src.images[i].dataUrl, ocrLang);
           results.push({
             pageNumber: i + 1,
@@ -367,7 +583,7 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
         const total = src.pageCount || (await getPdfPageCount(src.bytes));
         const limit = Math.min(total, 10);
         for (let i = 0; i < limit; i++) {
-          setProgressMsg(`قراءة الصفحة ${i + 1} من ${limit} بالذكاء البصري...`);
+          setProgressMsg(`${t.processing} (${i + 1}/${limit})`);
           const rendered = await renderSinglePdfPage(src.bytes, i, 1.8, 0);
           const res = await runOcrOnImageDataUrl(rendered.dataUrl, ocrLang);
           results.push({
@@ -376,9 +592,6 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
             detectedLanguage: res.detectedLanguage,
             lines: res.lines,
           });
-        }
-        if (total > limit) {
-          onNotify('info', `تمت معالجة أول ${limit} صفحات لضمان سرعة الاستجابة عبر الهاتف.`);
         }
       }
 
@@ -389,12 +602,9 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
           .filter(Boolean)
           .join('\n\n')
       );
-      onNotify('success', 'تم استخراج النص بنجاح! يمكنك تعديله أو إنشاء PDF قابل للبحث.');
-    } catch (err) {
-      onNotify(
-        'error',
-        err instanceof Error ? err.message : 'تعذر إتمام التعرف الضوئي على النص.'
-      );
+      onNotify('success', 'تم استخراج النص بنجاح!');
+    } catch {
+      onNotify('error', 'تعذر إتمام التعرف الضوئي.');
     } finally {
       setBusy(false);
       setProgressMsg('');
@@ -410,7 +620,7 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
     if (!src || ocrResults.length === 0) return;
 
     setBusy(true);
-    setProgressMsg('جاري دمج طبقة النص القابلة للبحث داخل PDF...');
+    setProgressMsg(t.processing);
     try {
       const syncedResults = ocrResults.map((r, idx) =>
         ocrResults.length === 1 && idx === 0
@@ -425,13 +635,13 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
         syncedResults
       );
       const count = await getPdfPageCount(bytes);
-      const base = src.name.replace(/\.(pdf|png|jpg|jpeg|webp)$/i, '');
-      const outName = `${base}_قابل_للبحث.pdf`;
+      const base = src.name.replace(/\.[^.]+$/, '');
+      const outName = `${base}_searchable.pdf`;
       setSearchablePdf({ name: outName, bytes });
-      await onSaveToHistory(outName, bytes, count, 'OCR قابل للبحث');
-      onNotify('success', 'تم إنشاء ملف PDF قابل للبحث والنسخ بنجاح.');
+      await onSaveToHistory(outName, bytes, count, 'OCR Searchable PDF');
+      onNotify('success', 'تم إنشاء ملف PDF قابل للبحث بنجاح.');
     } catch {
-      onNotify('error', 'حدث خطأ أثناء بناء ملف PDF القابل للبحث.');
+      onNotify('error', 'حدث خطأ أثناء بناء PDF.');
     } finally {
       setBusy(false);
       setProgressMsg('');
@@ -439,14 +649,14 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 md:px-6 py-5 pb-24 md:pb-12 space-y-6">
+    <div className={`max-w-6xl mx-auto px-4 md:px-6 py-5 pb-24 md:pb-12 space-y-6 ${currentLang === 'ar' ? 'text-right' : 'text-left'}`}>
       {/* Mode Switcher */}
       <div className="flex items-center gap-1.5 p-1.5 bg-slate-200/70 rounded-2xl overflow-x-auto no-scrollbar">
-        {MODES.map((m) => (
+        {t.modes.map((m) => (
           <button
             key={m.id}
             type="button"
-            onClick={() => setMode(m.id)}
+            onClick={() => setMode(m.id as ConvertMode)}
             className={`min-h-[42px] px-4 py-2 rounded-xl text-xs md:text-sm font-semibold whitespace-nowrap shrink-0 transition-all cursor-pointer ${
               mode === m.id
                 ? 'bg-white text-slate-900 shadow-sm'
@@ -460,8 +670,8 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
 
       {busy && (
         <div className="rounded-2xl bg-slate-900 text-white px-4 py-3.5 flex items-center justify-between text-sm">
-          <span>{progressMsg || 'جاري المعالجة...'}</span>
-          <span className="text-xs text-slate-300">يرجى الانتظار</span>
+          <span>{progressMsg || t.processing}</span>
+          <span className="text-xs text-slate-300">{t.wait}</span>
         </div>
       )}
 
@@ -471,10 +681,8 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
           <div className="lg:col-span-8 bg-white rounded-2xl border border-slate-200 p-5 space-y-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">تحويل الصور إلى ملف PDF</h2>
-                <p className="text-sm text-slate-500">
-                  التقط صوراً بالكاميرا أو اختر من معرض الهاتف ورتبها بسهولة
-                </p>
+                <h2 className="text-lg font-bold text-slate-900">{t.imgToPdfTitle}</h2>
+                <p className="text-sm text-slate-500">{t.imgToPdfDesc}</p>
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -483,7 +691,7 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
                   className="min-h-[44px] px-3.5 py-2 rounded-xl border border-slate-200 text-slate-800 text-xs md:text-sm font-medium hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer"
                 >
                   <Camera className="w-4 h-4 text-red-600" />
-                  <span>الكاميرا</span>
+                  <span>{t.camera}</span>
                 </button>
                 <button
                   type="button"
@@ -491,7 +699,7 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
                   className="min-h-[44px] px-4 py-2 rounded-xl bg-slate-900 text-white text-xs md:text-sm font-medium hover:bg-slate-800 flex items-center gap-1.5 cursor-pointer"
                 >
                   <ImageIcon className="w-4 h-4" />
-                  <span>إضافة صور</span>
+                  <span>{t.addImages}</span>
                 </button>
               </div>
             </div>
@@ -504,7 +712,7 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
               >
                 <Upload className="w-7 h-7 text-red-600" />
                 <span className="text-sm font-semibold text-slate-800">
-                  اضغط لاختيار الصور من جهازك
+                  {t.pickImagesPrompt}
                 </span>
                 <span className="text-xs text-slate-500">PNG · JPG · WEBP</span>
               </button>
@@ -524,14 +732,13 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
                     </div>
                     <div className="flex items-center justify-between gap-1">
                       <span className="text-xs font-mono-num text-slate-600">
-                        صفحة {idx + 1}
+                        #{idx + 1}
                       </span>
                       <div className="flex items-center">
                         <button
                           type="button"
                           onClick={() => moveImage(idx, -1)}
                           disabled={idx === 0}
-                          aria-label="تقديم"
                           className="min-h-[36px] min-w-[32px] flex items-center justify-center text-slate-600 disabled:opacity-30 cursor-pointer"
                         >
                           <ArrowUp className="w-3.5 h-3.5" />
@@ -540,7 +747,6 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
                           type="button"
                           onClick={() => moveImage(idx, 1)}
                           disabled={idx === imgQueue.length - 1}
-                          aria-label="تأخير"
                           className="min-h-[36px] min-w-[32px] flex items-center justify-center text-slate-600 disabled:opacity-30 cursor-pointer"
                         >
                           <ArrowDown className="w-3.5 h-3.5" />
@@ -550,7 +756,6 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
                           onClick={() =>
                             setImgQueue((q) => q.filter((x) => x.id !== item.id))
                           }
-                          aria-label="حذف الصورة"
                           className="min-h-[36px] min-w-[32px] flex items-center justify-center text-red-600 cursor-pointer"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -564,39 +769,36 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
           </div>
 
           <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-200 p-5 space-y-5">
-            <h3 className="text-base font-bold text-slate-900">إعدادات الصفحة</h3>
+            <h3 className="text-base font-bold text-slate-900">{t.pageSize}</h3>
 
-            <div>
-              <span className="block text-xs font-medium text-slate-600 mb-2">مقاس الصفحة</span>
-              <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
-                <button
-                  type="button"
-                  onClick={() => setPageSize('a4')}
-                  className={`min-h-[40px] rounded-lg text-xs font-semibold cursor-pointer ${
-                    pageSize === 'a4' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'
-                  }`}
-                >
-                  A4 قياسي
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPageSize('fit')}
-                  className={`min-h-[40px] rounded-lg text-xs font-semibold cursor-pointer ${
-                    pageSize === 'fit' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'
-                  }`}
-                >
-                  مقاس الصورة
-                </button>
-              </div>
+            <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setPageSize('a4')}
+                className={`min-h-[40px] rounded-lg text-xs font-semibold cursor-pointer ${
+                  pageSize === 'a4' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'
+                }`}
+              >
+                {t.standardA4}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPageSize('fit')}
+                className={`min-h-[40px] rounded-lg text-xs font-semibold cursor-pointer ${
+                  pageSize === 'fit' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'
+                }`}
+              >
+                {t.imageSize}
+              </button>
             </div>
 
             <div>
-              <span className="block text-xs font-medium text-slate-600 mb-2">الهوامش</span>
+              <span className="block text-xs font-medium text-slate-600 mb-2">{t.margins}</span>
               <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100 rounded-xl">
                 {[
-                  { val: 0, label: 'بدون' },
-                  { val: 24, label: 'عادي' },
-                  { val: 48, label: 'واسع' },
+                  { val: 0, label: t.noMargin },
+                  { val: 24, label: t.normalMargin },
+                  { val: 48, label: t.wideMargin },
                 ].map((opt) => (
                   <button
                     key={opt.val}
@@ -620,13 +822,13 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
               onClick={handleConvertImagesToPdf}
               className="w-full min-h-[48px] rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-40 cursor-pointer"
             >
-              إنشاء ملف PDF ({imgQueue.length})
+              {t.createPdf} ({imgQueue.length})
             </button>
 
             {imgPdfResult && (
               <div className="pt-4 border-t border-slate-100 space-y-2.5">
                 <p className="text-xs text-slate-600 font-mono-num">
-                  جاهز · {formatBytes(imgPdfResult.bytes.byteLength)}
+                  {formatBytes(imgPdfResult.bytes.byteLength)}
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   <button
@@ -640,7 +842,7 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
                     className="min-h-[44px] rounded-xl bg-slate-900 text-white text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <Download className="w-4 h-4" />
-                    <span>تنزيل</span>
+                    <span>{t.download}</span>
                   </button>
                   <button
                     type="button"
@@ -660,7 +862,7 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
                     className="min-h-[44px] rounded-xl border border-slate-200 text-slate-800 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <Share2 className="w-4 h-4" />
-                    <span>مشاركة</span>
+                    <span>{t.share}</span>
                   </button>
                 </div>
                 <button
@@ -670,7 +872,7 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
                   }
                   className="w-full min-h-[42px] rounded-xl text-xs font-semibold text-red-600 hover:bg-red-50 cursor-pointer"
                 >
-                  فتح الملف في المحرر
+                  {t.openInEditor}
                 </button>
               </div>
             )}
@@ -678,17 +880,13 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
         </div>
       )}
 
-      {/* MODE 2: OCR (Images & Scanned PDFs -> Editable & Searchable) */}
+      {/* MODE 2: OCR */}
       {mode === 'ocr' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200 p-5 space-y-5">
             <div>
-              <h2 className="text-lg font-bold text-slate-900">
-                التعرف الضوئي على النص (OCR)
-              </h2>
-              <p className="text-sm text-slate-500 mt-1">
-                استخرج النصوص العربية والإنجليزية من الصور أو ملفات PDF الممسوحة ضوئياً وحوّلها إلى مستند قابل للبحث والتحرير.
-              </p>
+              <h2 className="text-lg font-bold text-slate-900">{t.ocrTitle}</h2>
+              <p className="text-sm text-slate-500 mt-1">{t.ocrDesc}</p>
             </div>
 
             <div className="grid grid-cols-2 gap-2.5">
@@ -698,7 +896,7 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
                 className="min-h-[48px] px-3 rounded-xl border border-slate-200 text-slate-800 text-xs md:text-sm font-medium hover:bg-slate-50 flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Camera className="w-4 h-4 text-red-600" />
-                <span>تصوير صفحة</span>
+                <span>{t.shootPage}</span>
               </button>
               <button
                 type="button"
@@ -706,7 +904,7 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
                 className="min-h-[48px] px-3 rounded-xl bg-slate-900 text-white text-xs md:text-sm font-medium hover:bg-slate-800 flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Upload className="w-4 h-4" />
-                <span>صورة أو PDF</span>
+                <span>{t.imageOrPdf}</span>
               </button>
             </div>
 
@@ -715,25 +913,16 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
                 <p className="text-sm font-semibold text-slate-900 truncate">
                   {ocrSource ? ocrSource.name : currentPdf?.name}
                 </p>
-                <p className="text-xs text-slate-500 font-mono-num">
-                  {ocrSource
-                    ? ocrSource.kind === 'images'
-                      ? `${ocrSource.images.length} صورة جاهزة`
-                      : `ملف PDF · ${ocrSource.pageCount} صفحات`
-                    : 'ملف PDF محمّل حالياً'}
-                </p>
               </div>
             )}
 
             <div>
-              <span className="block text-xs font-medium text-slate-600 mb-2">
-                لغة المستند
-              </span>
+              <span className="block text-xs font-medium text-slate-600 mb-2">{t.docLang}</span>
               <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-xl">
                 {[
-                  { id: 'auto' as const, label: 'تلقائي' },
-                  { id: 'ar' as const, label: 'العربية' },
-                  { id: 'en' as const, label: 'English' },
+                  { id: 'auto' as const, label: t.auto },
+                  { id: 'ar' as const, label: t.arabic },
+                  { id: 'en' as const, label: t.english },
                 ].map((l) => (
                   <button
                     key={l.id}
@@ -758,32 +947,24 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
               className="w-full min-h-[48px] rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-40 flex items-center justify-center gap-2 cursor-pointer"
             >
               <ScanText className="w-4 h-4" />
-              <span>استخراج النص الآن</span>
+              <span>{t.extractTextNow}</span>
             </button>
           </div>
 
           <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <h3 className="text-base font-bold text-slate-900">النص المستخرج القابل للتعديل</h3>
-                {ocrResults.length > 0 && (
-                  <p className="text-xs text-slate-500">
-                    {ocrResults[0].detectedLanguage} · {ocrResults.length} صفحات معالجة
-                  </p>
-                )}
-              </div>
-
+              <h3 className="text-base font-bold text-slate-900">{t.editableText}</h3>
               {ocrCombinedText && (
                 <button
                   type="button"
                   onClick={() => {
                     navigator.clipboard.writeText(ocrCombinedText);
-                    onNotify('success', 'تم نسخ النص إلى الحافظة.');
+                    onNotify('success', 'Copied.');
                   }}
                   className="min-h-[40px] px-3 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer"
                 >
                   <Copy className="w-3.5 h-3.5" />
-                  <span>نسخ</span>
+                  <span>{t.copy}</span>
                 </button>
               )}
             </div>
@@ -792,7 +973,6 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
               rows={11}
               value={ocrCombinedText}
               onChange={(e) => setOcrCombinedText(e.target.value)}
-              placeholder="سيظهر النص المستخرج هنا لتتمكن من مراجعته وتعديله أو حفظه..."
               className="w-full rounded-xl border border-slate-200 p-3.5 text-sm leading-relaxed text-slate-900 focus:outline-none focus:border-red-600"
             />
 
@@ -806,7 +986,7 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
                     className="sm:col-span-3 min-h-[48px] rounded-xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <Sparkles className="w-4 h-4" />
-                    <span>إنشاء PDF قابل للبحث والنسخ</span>
+                    <span>{t.createSearchablePdf}</span>
                   </button>
 
                   <button
@@ -820,7 +1000,7 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
                     className="min-h-[44px] rounded-xl border border-slate-200 text-slate-800 text-xs font-semibold hover:bg-slate-50 flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <Download className="w-4 h-4" />
-                    <span>تصدير Word (.docx)</span>
+                    <span>{t.exportWord}</span>
                   </button>
 
                   <button
@@ -828,62 +1008,45 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
                     onClick={() =>
                       downloadBlob(
                         new Blob([ocrCombinedText], { type: 'text/plain;charset=utf-8' }),
-                        `${(ocrSource?.name || 'ocr').replace(/\.[^.]+$/, '')}.txt`
+                        `ocr.txt`
                       )
                     }
                     className="min-h-[44px] rounded-xl border border-slate-200 text-slate-800 text-xs font-semibold hover:bg-slate-50 flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <FileText className="w-4 h-4" />
-                    <span>تنزيل نص (.txt)</span>
+                    <span>{t.downloadTxt}</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={async () => {
                       const bytes = await textToPdfBytes(ocrCombinedText);
-                      const name = `نص_منسق_OCR.pdf`;
-                      downloadBlob(
-                        new Blob([bytes.buffer as ArrayBuffer], { type: 'application/pdf' }),
-                        name
-                      );
+                      downloadBlob(new Blob([bytes.buffer as ArrayBuffer], { type: 'application/pdf' }), 'ocr.pdf');
                     }}
                     className="min-h-[44px] rounded-xl border border-slate-200 text-slate-800 text-xs font-semibold hover:bg-slate-50 flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <FileText className="w-4 h-4" />
-                    <span>PDF نصي نظيف</span>
+                    <span>{t.cleanTextPdf}</span>
                   </button>
                 </div>
 
                 {searchablePdf && (
-                  <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3.5 flex flex-wrap items-center justify-between gap-2">
+                  <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3.5 flex items-center justify-between">
                     <span className="text-xs font-semibold text-emerald-900">
-                      ملف PDF القابل للبحث جاهز ({formatBytes(searchablePdf.bytes.byteLength)})
+                      PDF Ready ({formatBytes(searchablePdf.bytes.byteLength)})
                     </span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          downloadBlob(
-                            new Blob([searchablePdf.bytes.buffer as ArrayBuffer], {
-                              type: 'application/pdf',
-                            }),
-                            searchablePdf.name
-                          )
-                        }
-                        className="min-h-[38px] px-3 rounded-lg bg-emerald-700 text-white text-xs font-semibold cursor-pointer"
-                      >
-                        تنزيل
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          onOpenPdfInEditor(searchablePdf.name, searchablePdf.bytes)
-                        }
-                        className="min-h-[38px] px-3 rounded-lg bg-white border border-emerald-300 text-emerald-900 text-xs font-semibold cursor-pointer"
-                      >
-                        فتح في المحرر
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        downloadBlob(
+                          new Blob([searchablePdf.bytes.buffer as ArrayBuffer], { type: 'application/pdf' }),
+                          searchablePdf.name
+                        )
+                      }
+                      className="min-h-[38px] px-3 rounded-lg bg-emerald-700 text-white text-xs font-semibold cursor-pointer"
+                    >
+                      {t.download}
+                    </button>
                   </div>
                 )}
               </div>
@@ -897,11 +1060,9 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
         <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-bold text-slate-900">تحويل PDF إلى صور</h2>
+              <h2 className="text-lg font-bold text-slate-900">{t.pdfToImgTitle}</h2>
               <p className="text-sm text-slate-500">
-                {currentPdf
-                  ? `${currentPdf.name} · ${formatBytes(currentPdf.bytes.byteLength)}`
-                  : 'اختر ملف PDF لتحويل صفحاته إلى صور عالية الدقة'}
+                {currentPdf ? currentPdf.name : ''}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -924,7 +1085,7 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
                 onClick={() => pdfInputRef.current?.click()}
                 className="min-h-[44px] px-4 py-2 rounded-xl border border-slate-200 text-xs md:text-sm font-medium text-slate-800 hover:bg-slate-50 cursor-pointer"
               >
-                {currentPdf ? 'تغيير الملف' : 'اختيار PDF'}
+                {currentPdf ? t.changeFile : t.selectPdf}
               </button>
               {currentPdf && (
                 <button
@@ -933,7 +1094,7 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
                   onClick={handlePdfToImages}
                   className="min-h-[44px] px-4 py-2 rounded-xl bg-red-600 text-white text-xs md:text-sm font-semibold hover:bg-red-700 cursor-pointer"
                 >
-                  تحويل الآن
+                  {t.convertNow}
                 </button>
               )}
             </div>
@@ -942,8 +1103,8 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
           {exportedImages.length > 0 && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-slate-800 tabular-nums">
-                  {exportedImages.length} صور جاهزة
+                <span className="text-sm font-semibold text-slate-800">
+                  {exportedImages.length} images
                 </span>
                 <button
                   type="button"
@@ -951,7 +1112,7 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
                   className="min-h-[42px] px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-semibold flex items-center gap-2 cursor-pointer"
                 >
                   <Download className="w-4 h-4" />
-                  <span>تنزيل الكل (ZIP)</span>
+                  <span>{t.downloadAllZip}</span>
                 </button>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -963,27 +1124,17 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
                     <div className="aspect-[3/4] rounded-lg overflow-hidden bg-white">
                       <img
                         src={item.dataUrl}
-                        alt={`صفحة ${item.pageNumber}`}
+                        alt={`Page ${item.pageNumber}`}
                         className="w-full h-full object-contain"
                       />
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-mono-num text-slate-600">
-                        صفحة {item.pageNumber}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          downloadBlob(
-                            item.blob,
-                            `page_${item.pageNumber}.${imgFormat === 'png' ? 'png' : 'jpg'}`
-                          )
-                        }
-                        className="min-h-[36px] px-2.5 rounded-lg bg-white border border-slate-200 text-xs font-medium text-slate-800 hover:bg-slate-100 cursor-pointer"
-                      >
-                        حفظ
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => downloadBlob(item.blob, `page_${item.pageNumber}.${imgFormat}`)}
+                      className="w-full min-h-[36px] rounded-lg bg-white border border-slate-200 text-xs font-medium text-slate-800 hover:bg-slate-100 cursor-pointer"
+                    >
+                      {t.download}
+                    </button>
                   </div>
                 ))}
               </div>
@@ -992,17 +1143,12 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
         </div>
       )}
 
-      {/* MODE 4: PDF -> Word / Text */}
+      {/* MODE 4: PDF -> Word */}
       {mode === 'pdf-to-word' && (
         <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-bold text-slate-900">تحويل PDF إلى Word أو نص</h2>
-              <p className="text-sm text-slate-500">
-                {currentPdf
-                  ? `${currentPdf.name} · ${formatBytes(currentPdf.bytes.byteLength)}`
-                  : 'اختر ملف PDF لاستخراج نصوصه وتصديرها بصيغة Word (.docx)'}
-              </p>
+              <h2 className="text-lg font-bold text-slate-900">{t.pdfToWordTitle}</h2>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -1010,7 +1156,7 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
                 onClick={() => pdfInputRef.current?.click()}
                 className="min-h-[44px] px-4 py-2 rounded-xl border border-slate-200 text-xs md:text-sm font-medium text-slate-800 cursor-pointer"
               >
-                {currentPdf ? 'تغيير الملف' : 'اختيار PDF'}
+                {currentPdf ? t.changeFile : t.selectPdf}
               </button>
               {currentPdf && (
                 <button
@@ -1019,7 +1165,7 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
                   onClick={handleExtractDigitalText}
                   className="min-h-[44px] px-4 py-2 rounded-xl bg-red-600 text-white text-xs md:text-sm font-semibold hover:bg-red-700 cursor-pointer"
                 >
-                  استخراج النصوص
+                  {t.extractTexts}
                 </button>
               )}
             </div>
@@ -1036,35 +1182,18 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
               <div className="flex flex-wrap items-center gap-2.5">
                 <button
                   type="button"
-                  onClick={() =>
-                    handleDownloadWordFromText(
-                      editableText,
-                      (currentPdf?.name || 'document').replace(/\.pdf$/i, '')
-                    )
-                  }
+                  onClick={() => handleDownloadWordFromText(editableText, 'document')}
                   className="min-h-[44px] px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-semibold flex items-center gap-2 cursor-pointer"
                 >
                   <Download className="w-4 h-4" />
-                  <span>تنزيل كملف Word (.docx)</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    downloadBlob(
-                      new Blob([editableText], { type: 'text/plain;charset=utf-8' }),
-                      `${(currentPdf?.name || 'document').replace(/\.pdf$/i, '')}.txt`
-                    )
-                  }
-                  className="min-h-[44px] px-4 py-2 rounded-xl border border-slate-200 text-slate-800 text-sm font-medium cursor-pointer"
-                >
-                  تنزيل نص (.txt)
+                  <span>Word (.docx)</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setMode('ocr')}
                   className="min-h-[44px] px-4 py-2 rounded-xl text-red-600 text-xs font-semibold hover:bg-red-50 cursor-pointer"
                 >
-                  الملف ممسوح كصورة؟ جرّب OCR
+                  {t.ocrHint}
                 </button>
               </div>
             </div>
@@ -1077,10 +1206,8 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
         <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-bold text-slate-900">تحويل Word أو نص إلى PDF</h2>
-              <p className="text-sm text-slate-500">
-                ارفع ملف DOCX أو TXT أو اكتب مستندك مباشرة بخط عربي واضح
-              </p>
+              <h2 className="text-lg font-bold text-slate-900">{t.wordToPdfTitle}</h2>
+              <p className="text-sm text-slate-500">{t.wordToPdfDesc}</p>
             </div>
             <button
               type="button"
@@ -1088,7 +1215,7 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
               className="min-h-[44px] px-4 py-2 rounded-xl bg-slate-900 text-white text-xs md:text-sm font-medium flex items-center gap-2 cursor-pointer"
             >
               <Upload className="w-4 h-4" />
-              <span>رفع ملف Word / TXT</span>
+              <span>{t.uploadWordTxt}</span>
             </button>
           </div>
 
@@ -1097,14 +1224,14 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
               type="text"
               value={docTitle}
               onChange={(e) => setDocTitle(e.target.value)}
-              placeholder="عنوان المستند (اختياري)"
+              placeholder={t.docTitlePlaceholder}
               className="w-full min-h-[44px] rounded-xl border border-slate-200 px-3.5 text-sm text-slate-900 focus:outline-none focus:border-red-600"
             />
             <textarea
               rows={9}
               value={docText}
               onChange={(e) => setDocText(e.target.value)}
-              placeholder="اكتب أو الصق النص هنا لتحويله إلى صفحات PDF منسقة..."
+              placeholder={t.docTextPlaceholder}
               className="w-full rounded-xl border border-slate-200 p-3.5 text-sm leading-relaxed text-slate-900 focus:outline-none focus:border-red-600"
             />
           </div>
@@ -1116,98 +1243,35 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
               onClick={handleBuildPdfFromText}
               className="min-h-[48px] px-6 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-40 cursor-pointer"
             >
-              تحويل إلى PDF
+              {t.createPdf}
             </button>
 
             {textPdfResult && (
-              <>
-                <button
-                  type="button"
-                  onClick={() =>
-                    downloadBlob(
-                      new Blob([textPdfResult.bytes.buffer as ArrayBuffer], { type: 'application/pdf' }),
-                      textPdfResult.name
-                    )
-                  }
-                  className="min-h-[48px] px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-semibold flex items-center gap-2 cursor-pointer"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>تنزيل ({formatBytes(textPdfResult.bytes.byteLength)})</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    onOpenPdfInEditor(textPdfResult.name, textPdfResult.bytes)
-                  }
-                  className="min-h-[48px] px-4 py-2.5 rounded-xl border border-slate-200 text-slate-800 text-sm font-medium cursor-pointer"
-                >
-                  تعديل في المحرر
-                </button>
-              </>
+              <button
+                type="button"
+                onClick={() =>
+                  downloadBlob(
+                    new Blob([textPdfResult.bytes.buffer as ArrayBuffer], { type: 'application/pdf' }),
+                    textPdfResult.name
+                  )
+                }
+                className="min-h-[48px] px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-semibold flex items-center gap-2 cursor-pointer"
+              >
+                <Download className="w-4 h-4" />
+                <span>{t.download}</span>
+              </button>
             )}
           </div>
         </div>
       )}
 
       {/* Hidden File Inputs */}
-      <input
-        ref={imgInputRef}
-        type="file"
-        accept="image/*"
-        multiple
-        className="hidden"
-        onChange={(e) => {
-          handleAddImages(e.target.files);
-          e.target.value = '';
-        }}
-      />
-      <input
-        ref={cameraInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={(e) => {
-          handleAddImages(e.target.files);
-          e.target.value = '';
-        }}
-      />
-      <input
-        ref={pdfInputRef}
-        type="file"
-        accept="application/pdf,.pdf"
-        className="hidden"
-        onChange={handlePickPdf}
-      />
-      <input
-        ref={wordInputRef}
-        type="file"
-        accept=".docx,.txt,.md"
-        className="hidden"
-        onChange={handleUploadWordOrText}
-      />
-      <input
-        ref={ocrFileInputRef}
-        type="file"
-        accept="image/*,application/pdf,.pdf"
-        multiple
-        className="hidden"
-        onChange={(e) => {
-          handleSelectOcrFiles(e.target.files);
-          e.target.value = '';
-        }}
-      />
-      <input
-        ref={ocrCameraInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={(e) => {
-          handleSelectOcrFiles(e.target.files);
-          e.target.value = '';
-        }}
-      />
+      <input ref={imgInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { handleAddImages(e.target.files); e.target.value = ''; }} />
+      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { handleAddImages(e.target.files); e.target.value = ''; }} />
+      <input ref={pdfInputRef} type="file" accept="application/pdf,.pdf" className="hidden" onChange={handlePickPdf} />
+      <input ref={wordInputRef} type="file" accept=".docx,.txt,.md" className="hidden" onChange={handleUploadWordOrText} />
+      <input ref={ocrFileInputRef} type="file" accept="image/*,application/pdf,.pdf" multiple className="hidden" onChange={(e) => { handleSelectOcrFiles(e.target.files); e.target.value = ''; }} />
+      <input ref={ocrCameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { handleSelectOcrFiles(e.target.files); e.target.value = ''; }} />
     </div>
   );
 };
