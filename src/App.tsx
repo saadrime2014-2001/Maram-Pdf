@@ -19,10 +19,51 @@ import {
 } from './utils/localStore';
 import { createSamplePdf, getPdfPageCount } from './utils/pdfEngine';
 
+// قاموس الترجمات للغات الأربع
+const t = {
+  ar: {
+    opened: 'ملف مفتوح',
+    openError: 'تعذر فتح ملف PDF. تأكد من سلامة الملف.',
+    imported: 'تم استيراد ملف PDF بنجاح.',
+    importError: 'تعذر قراءة ملف PDF المُمرر من النظام.',
+    sampleReady: 'تم تجهيز المستند التجريبي. اضغط على أي صفحة لتعديلها.',
+    sampleError: 'تعذر إنشاء الملف التجريبي.',
+    deleted: 'تم حذف الملف من السجل المحلي.',
+  },
+  en: {
+    opened: 'Opened file',
+    openError: 'Could not open PDF. Please check the file.',
+    imported: 'PDF imported successfully.',
+    importError: 'Could not read system PDF file.',
+    sampleReady: 'Sample document ready. Tap any page to edit.',
+    sampleError: 'Could not create sample file.',
+    deleted: 'File deleted from local history.',
+  },
+  fr: {
+    opened: 'Fichier ouvert',
+    openError: 'Impossible d\'ouvrir le PDF. Vérifiez le fichier.',
+    imported: 'PDF importé avec succès.',
+    importError: 'Impossible de lire le fichier PDF système.',
+    sampleReady: 'Document exemple prêt. Touchez une page pour modifier.',
+    sampleError: 'Impossible de créer le fichier exemple.',
+    deleted: 'Fichier supprimé de l\'historique local.',
+  },
+  es: {
+    opened: 'Archivo abierto',
+    openError: 'No se pudo abrir el PDF. Compruebe el archivo.',
+    imported: 'PDF importado con éxito.',
+    importError: 'No se pudo leer el archivo PDF del sistema.',
+    sampleReady: 'Documento de muestra listo. Toca cualquier página.',
+    sampleError: 'No se pudo crear el archivo de muestra.',
+    deleted: 'Archivo eliminado del historial local.',
+  },
+};
+
 export default function App() {
   const [section, setSection] = useState<AppSection>('home');
   const [convertMode, setConvertMode] = useState<ConvertMode>('img-to-pdf');
   const [editMode, setEditMode] = useState<EditMode>('pages');
+  const [lang, setLang] = useState<'ar' | 'en' | 'fr' | 'es'>('ar'); // حالة اللغة الحالية
   const [activePdf, setActivePdf] = useState<{
     name: string;
     bytes: Uint8Array;
@@ -32,6 +73,12 @@ export default function App() {
   const [annotatorActive, setAnnotatorActive] = useState(false);
 
   const globalPdfInputRef = useRef<HTMLInputElement | null>(null);
+
+  // تحديث اتجاه الصفحة بناءً على اللغة
+  useEffect(() => {
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  }, [lang]);
 
   const notify = useCallback(
     (type: ToastMessage['type'], text: string) => {
@@ -77,13 +124,13 @@ export default function App() {
       try {
         const count = await getPdfPageCount(bytes);
         setActivePdf({ name, bytes });
-        await handleSaveToHistory(name, bytes, count, 'ملف مفتوح');
+        await handleSaveToHistory(name, bytes, count, t[lang].opened);
         setSection(targetSection);
       } catch {
-        notify('error', 'تعذر فتح ملف PDF. تأكد من سلامة الملف.');
+        notify('error', t[lang].openError);
       }
     },
-    [handleSaveToHistory, notify]
+    [handleSaveToHistory, notify, lang]
   );
 
   useEffect(() => {
@@ -110,18 +157,18 @@ export default function App() {
         const rawName = decodedUri.split('/').pop()?.split('?')[0] || '';
         const fileName = rawName.toLowerCase().endsWith('.pdf')
           ? decodeURIComponent(rawName)
-          : 'ملف_خارجي.pdf';
+          : 'document.pdf';
 
         await openPdfBuffer(fileName, bytes, 'edit');
         setEditMode('pages');
-        notify('success', 'تم استيراد ملف PDF بنجاح.');
+        notify('success', t[lang].imported);
       } catch {
-        notify('error', 'تعذر قراءة ملف PDF المُمرر من النظام.');
+        notify('error', t[lang].importError);
       }
     };
 
     checkIncomingPdf();
-  }, [openPdfBuffer, notify]);
+  }, [openPdfBuffer, notify, lang]);
 
   const handleGlobalFilePicked = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -135,18 +182,18 @@ export default function App() {
   const handleLoadSamplePdf = async () => {
     try {
       const bytes = await createSamplePdf();
-      await openPdfBuffer('مستند_تجريبي.pdf', bytes, 'edit');
+      await openPdfBuffer('sample.pdf', bytes, 'edit');
       setEditMode('pages');
-      notify('success', 'تم تجهيز المستند التجريبي. اضغط على أي صفحة لتعديلها.');
+      notify('success', t[lang].sampleReady);
     } catch {
-      notify('error', 'تعذر إنشاء الملف التجريبي.');
+      notify('error', t[lang].sampleError);
     }
   };
 
   const handleDeleteRecent = async (id: string) => {
     await deleteRecentFile(id);
     await refreshRecentFiles();
-    notify('info', 'تم حذف الملف من السجل المحلي.');
+    notify('info', t[lang].deleted);
   };
 
   return (
@@ -156,13 +203,15 @@ export default function App() {
           activeSection={section}
           onNavigate={setSection}
           onOpenFilePicker={() => globalPdfInputRef.current?.click()}
+          currentLang={lang}
+          onLanguageChange={setLang}
           subViewTitle={
             section !== 'home'
               ? section === 'convert'
-                ? 'المحول'
+                ? 'Converter / تحويل'
                 : section === 'edit'
-                  ? 'المحرر'
-                  : 'ملفاتي'
+                  ? 'Editor / محرر'
+                  : 'Files / ملفاتي'
               : undefined
           }
           onBackFromSubView={
@@ -175,6 +224,7 @@ export default function App() {
         {section === 'home' && (
           <HomeHub
             recentFiles={recentFiles}
+            currentLang={lang}
             onPickPdf={() => globalPdfInputRef.current?.click()}
             onLoadSamplePdf={handleLoadSamplePdf}
             onStartConvert={(mode) => {
@@ -198,6 +248,7 @@ export default function App() {
             key={convertMode}
             initialMode={convertMode}
             activePdf={activePdf}
+            currentLang={lang}
             onSaveToHistory={handleSaveToHistory}
             onNotify={notify}
             onOpenPdfInEditor={(name, bytes) => {
@@ -212,6 +263,7 @@ export default function App() {
           <PdfEditorStudio
             initialMode={editMode}
             activePdf={activePdf}
+            currentLang={lang}
             onSelectNewPdf={() => globalPdfInputRef.current?.click()}
             onLoadSamplePdf={handleLoadSamplePdf}
             onSaveToHistory={handleSaveToHistory}
@@ -223,6 +275,7 @@ export default function App() {
         {section === 'files' && (
           <RecentFilesView
             files={recentFiles}
+            currentLang={lang}
             onOpenInEditor={(f) => {
               setActivePdf({ name: f.name, bytes: f.bytes });
               setEditMode('pages');
@@ -242,6 +295,7 @@ export default function App() {
       {!annotatorActive && (
         <BottomNav
           activeSection={section}
+          currentLang={lang}
           onNavigate={setSection}
           fileCount={recentFiles.length}
         />
