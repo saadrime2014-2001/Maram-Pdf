@@ -39,6 +39,7 @@ import { PageAnnotator } from './PageAnnotator';
 interface PdfEditorStudioProps {
   initialMode: EditMode;
   activePdf: { name: string; bytes: Uint8Array } | null;
+  currentLang: 'ar' | 'en' | 'fr' | 'es';
   onSelectNewPdf: () => void;
   onLoadSamplePdf: () => void;
   onSaveToHistory: (
@@ -58,22 +59,204 @@ interface MergeItem {
   pageCount: number;
 }
 
-const EDIT_TABS: Array<{ id: EditMode; label: string }> = [
-  { id: 'pages', label: 'تعديل وترتيب الصفحات' },
-  { id: 'merge', label: 'دمج ملفات' },
-  { id: 'split', label: 'تقسيم واستخراج' },
-  { id: 'compress', label: 'ضغط الحجم' },
-];
+const translations = {
+  ar: {
+    tabs: [
+      { id: 'pages', label: 'تعديل وترتيب الصفحات' },
+      { id: 'merge', label: 'دمج ملفات' },
+      { id: 'split', label: 'تقسيم واستخراج' },
+      { id: 'compress', label: 'ضغط الحجم' },
+    ],
+    noPdfTitle: 'لم تختر ملف PDF بعد',
+    noPdfDesc: 'اختر ملفاً من هاتفك للبدء في تعديل النصوص، إدراج الصور، التوقيع، أو إعادة ترتيب الصفحات.',
+    chooseFile: 'اختيار ملف من الجهاز',
+    trySample: 'تجربة بملف جاهز',
+    activePages: 'صفحة نشطة',
+    print: 'طباعة',
+    share: 'مشاركة',
+    changeFile: 'تغيير الملف',
+    saveAndExport: 'حفظ وتصدير الملف',
+    saving: 'جاري الحفظ...',
+    readyOutput: 'تم تجهيز الملف المعدل',
+    save: 'حفظ',
+    loadingThumbs: 'جاري عرض معاينة الصفحات...',
+    editOrAddText: 'تعديل / إضافة نص',
+    deleted: 'محذوفة',
+    page: 'صفحة',
+    editCount: 'تعديل',
+    mergeTitle: 'دمج عدة ملفات PDF',
+    mergeDesc: 'أضف الملفات ورتبها كما تريد ثم ادمجها في ملف واحد',
+    addPdfFiles: 'إضافة ملفات PDF',
+    mergePrompt: 'اضغط لاختيار ملفين أو أكثر من هاتفك',
+    mergeBtn: 'دمج الملفات',
+    splitTitle: 'تقسيم واستخراج الصفحات',
+    splitDesc: 'اضغط على الصفحات المطلوبة أو أدخل النطاق مثل 1-3, 5',
+    extractSelected: 'استخراج المحدد',
+    splitAllZip: 'تقسيم الكل (ZIP)',
+    compressTitle: 'ضغط وتصغير حجم PDF',
+    currentSize: 'الحجم الحالي',
+    compressQuality: [
+      { id: 'high', title: 'جودة عالية', desc: 'مناسب للطباعة مع تقليل خفيف' },
+      { id: 'medium', title: 'توازن مثالي', desc: 'أوضح قراءة بأصغر حجم' },
+      { id: 'compact', title: 'حجم للمراسلة', desc: 'أقصى ضغط للإرسال السريع' },
+    ],
+    compressBtn: 'ضغط الملف الآن',
+    compressing: 'جاري الضغط...',
+    compressedSuccess: 'تم ضغط الملف',
+    newSize: 'الحجم الجديد',
+    savingPercent: 'توفير',
+  },
+  en: {
+    tabs: [
+      { id: 'pages', label: 'Edit & Reorder Pages' },
+      { id: 'merge', label: 'Merge PDFs' },
+      { id: 'split', label: 'Split & Extract' },
+      { id: 'compress', label: 'Compress Size' },
+    ],
+    noPdfTitle: 'No PDF selected yet',
+    noPdfDesc: 'Choose a file from your phone to start editing texts, adding images, signatures, or reordering pages.',
+    chooseFile: 'Choose file from device',
+    trySample: 'Try sample file',
+    activePages: 'active pages',
+    print: 'Print',
+    share: 'Share',
+    changeFile: 'Change file',
+    saveAndExport: 'Save & Export',
+    saving: 'Saving...',
+    readyOutput: 'Modified file ready',
+    save: 'Save',
+    loadingThumbs: 'Loading page previews...',
+    editOrAddText: 'Edit / Add text',
+    deleted: 'Deleted',
+    page: 'Page',
+    editCount: 'edit',
+    mergeTitle: 'Merge Multiple PDFs',
+    mergeDesc: 'Add files, reorder them as you wish, and merge into a single document.',
+    addPdfFiles: 'Add PDF Files',
+    mergePrompt: 'Click to choose two or more files from your phone',
+    mergeBtn: 'Merge Files',
+    splitTitle: 'Split & Extract Pages',
+    splitDesc: 'Tap desired pages or enter range like 1-3, 5',
+    extractSelected: 'Extract Selected',
+    splitAllZip: 'Split All (ZIP)',
+    compressTitle: 'Compress & Reduce PDF Size',
+    currentSize: 'Current Size',
+    compressQuality: [
+      { id: 'high', title: 'High Quality', desc: 'Suitable for printing with light reduction' },
+      { id: 'medium', title: 'Balanced', desc: 'Clear reading with minimal size' },
+      { id: 'compact', title: 'Messaging Size', desc: 'Maximum compression for fast sending' },
+    ],
+    compressBtn: 'Compress File Now',
+    compressing: 'Compressing...',
+    compressedSuccess: 'File compressed',
+    newSize: 'New Size',
+    savingPercent: 'Saved',
+  },
+  fr: {
+    tabs: [
+      { id: 'pages', label: 'Éditer & Réorganiser' },
+      { id: 'merge', label: 'Fusionner' },
+      { id: 'split', label: 'Diviser & Extraire' },
+      { id: 'compress', label: 'Compresser' },
+    ],
+    noPdfTitle: 'Aucun PDF sélectionné',
+    noPdfDesc: 'Choisissez un fichier pour modifier les textes, signer ou réorganiser.',
+    chooseFile: 'Choisir un fichier',
+    trySample: 'Essayer un exemple',
+    activePages: 'pages actives',
+    print: 'Imprimer',
+    share: 'Partager',
+    changeFile: 'Changer',
+    saveAndExport: 'Enregistrer & Exporter',
+    saving: 'Enregistrement...',
+    readyOutput: 'Fichier modifié prêt',
+    save: 'Enregistrer',
+    loadingThumbs: 'Chargement des aperçus...',
+    editOrAddText: 'Éditer / Ajouter du texte',
+    deleted: 'Supprimé',
+    page: 'Page',
+    editCount: 'modif',
+    mergeTitle: 'Fusionner des PDF',
+    mergeDesc: 'Ajoutez des fichiers, organisez-les et fusionnez en un seul.',
+    addPdfFiles: 'Ajouter des PDF',
+    mergePrompt: 'Cliquez pour choisir des fichiers',
+    mergeBtn: 'Fusionner',
+    splitTitle: 'Diviser & Extraire les pages',
+    splitDesc: 'Touchez les pages ou entrez une plage ex: 1-3, 5',
+    extractSelected: 'Extraire la sélection',
+    splitAllZip: 'Tout diviser (ZIP)',
+    compressTitle: 'Compresser la taille du PDF',
+    currentSize: 'Taille actuelle',
+    compressQuality: [
+      { id: 'high', title: 'Haute qualité', desc: 'Idéal pour impression' },
+      { id: 'medium', title: 'Équilibré', desc: 'Bonne lecture et petite taille' },
+      { id: 'compact', title: 'Compact', desc: 'Compression maximale' },
+    ],
+    compressBtn: 'Compresser maintenant',
+    compressing: 'Compression...',
+    compressedSuccess: 'Fichier compressé',
+    newSize: 'Nouvelle taille',
+    savingPercent: 'Économie',
+  },
+  es: {
+    tabs: [
+      { id: 'pages', label: 'Editar y Reordenar' },
+      { id: 'merge', label: 'Unir PDFs' },
+      { id: 'split', label: 'Dividir y Extraer' },
+      { id: 'compress', label: 'Comprimir Tamaño' },
+    ],
+    noPdfTitle: 'Ningún PDF seleccionado',
+    noPdfDesc: 'Elige un archivo de tu teléfono para editar textos, añadir firmas o reordenar.',
+    chooseFile: 'Elegir archivo',
+    trySample: 'Probar muestra',
+    activePages: 'páginas activas',
+    print: 'Imprimir',
+    share: 'Compartir',
+    changeFile: 'Cambiar archivo',
+    saveAndExport: 'Guardar y Exportar',
+    saving: 'Guardando...',
+    readyOutput: 'Archivo modificado listo',
+    save: 'Guardar',
+    loadingThumbs: 'Cargando vistas previas...',
+    editOrAddText: 'Editar / Añadir texto',
+    deleted: 'Eliminada',
+    page: 'Página',
+    editCount: 'edición',
+    mergeTitle: 'Unir Varios PDFs',
+    mergeDesc: 'Añade archivos, ordénalos y únelos en un solo documento.',
+    addPdfFiles: 'Añadir archivos PDF',
+    mergePrompt: 'Haz clic para elegir archivos de tu teléfono',
+    mergeBtn: 'Unir Archivos',
+    splitTitle: 'Dividir y Extraer Páginas',
+    splitDesc: 'Toca las páginas deseadas o introduce un rango como 1-3, 5',
+    extractSelected: 'Extraer Seleccionadas',
+    splitAllZip: 'Dividir Todo (ZIP)',
+    compressTitle: 'Comprimir y Reducir Tamaño de PDF',
+    currentSize: 'Tamaño actual',
+    compressQuality: [
+      { id: 'high', title: 'Alta Calidad', desc: 'Ideal para impresión' },
+      { id: 'medium', title: 'Equilibrado', desc: 'Buena lectura y tamaño reducido' },
+      { id: 'compact', title: 'Tamaño Mensajería', desc: 'Máxima compresión' },
+    ],
+    compressBtn: 'Comprimir Archivo Ahora',
+    compressing: 'Comprimiendo...',
+    compressedSuccess: 'Archivo comprimido',
+    newSize: 'Nuevo tamaño',
+    savingPercent: 'Ahorro',
+  },
+};
 
 export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
   initialMode,
   activePdf,
+  currentLang,
   onSelectNewPdf,
   onLoadSamplePdf,
   onSaveToHistory,
   onNotify,
   onAnnotatorActiveChange,
 }) => {
+  const t = translations[currentLang];
   const [mode, setMode] = useState<EditMode>(initialMode);
   const [busy, setBusy] = useState(false);
 
@@ -142,7 +325,6 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
       .then((thumbs) => {
         if (!cancelled) {
           setPages(thumbs);
-          // Seed merge list if empty
           setMergeList((prev) =>
             prev.length === 0
               ? [
@@ -158,7 +340,7 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
         }
       })
       .catch(() => {
-        if (!cancelled) onNotify('error', 'تعذر عرض صفحات هذا الملف.');
+        if (!cancelled) onNotify('error', 'Error loading thumbnails.');
       })
       .finally(() => {
         if (!cancelled) setLoadingThumbs(false);
@@ -185,7 +367,7 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
     setPages((prev) => {
       const target = prev.find((p) => p.id === id);
       if (target && !target.deleted && prev.filter((x) => !x.deleted).length <= 1) {
-        onNotify('info', 'يجب أن يحتوي المستند على صفحة واحدة على الأقل.');
+        onNotify('info', 'At least one page is required.');
         return prev;
       }
       return prev.map((p) => (p.id === id ? { ...p, deleted: !p.deleted } : p));
@@ -218,13 +400,13 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
         watermark
       );
       const base = activePdf.name.replace(/\.pdf$/i, '');
-      const outName = `${base}_معدل.pdf`;
+      const outName = `${base}_edited.pdf`;
       const count = activePages.length;
       setSavedOutput({ name: outName, bytes: outBytes });
-      await onSaveToHistory(outName, outBytes, count, 'تعديل وتوقيع');
-      onNotify('success', 'تم حفظ جميع التعديلات وإعادة ترتيب الصفحات بنجاح.');
+      await onSaveToHistory(outName, outBytes, count, 'Edit & Sign');
+      onNotify('success', 'Changes saved successfully.');
     } catch (err) {
-      onNotify('error', err instanceof Error ? err.message : 'تعذر حفظ التعديلات.');
+      onNotify('error', err instanceof Error ? err.message : 'Error saving changes.');
     } finally {
       setBusy(false);
     }
@@ -239,7 +421,6 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
     });
   };
 
-  // Merge handlers
   const handleAddMergeFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -270,26 +451,22 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
   };
 
   const handleMerge = async () => {
-    if (mergeList.length < 2) {
-      onNotify('info', 'أضف ملفين على الأقل لإتمام الدمج.');
-      return;
-    }
+    if (mergeList.length < 2) return;
     setBusy(true);
     try {
       const outBytes = await mergePdfFiles(mergeList);
       const totalPages = mergeList.reduce((sum, x) => sum + x.pageCount, 0);
-      const name = `ملف_مدمج_${Date.now().toString().slice(-4)}.pdf`;
+      const name = `merged_${Date.now().toString().slice(-4)}.pdf`;
       setMergedResult({ name, bytes: outBytes });
-      await onSaveToHistory(name, outBytes, totalPages, 'دمج ملفات');
-      onNotify('success', 'تم دمج الملفات في مستند واحد.');
+      await onSaveToHistory(name, outBytes, totalPages, 'Merge PDFs');
+      onNotify('success', 'Files merged successfully.');
     } catch {
-      onNotify('error', 'حدث خطأ أثناء دمج الملفات.');
+      onNotify('error', 'Error merging files.');
     } finally {
       setBusy(false);
     }
   };
 
-  // Split handlers
   const parseRangeString = (raw: string, maxPages: number): number[] => {
     const set = new Set<number>();
     const parts = raw.split(/[,،\s]+/).filter(Boolean);
@@ -316,20 +493,17 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
         ? [...selectedSplitIndices].sort((a, b) => a - b)
         : parseRangeString(splitRangeInput, pages.length);
 
-    if (indices.length === 0) {
-      onNotify('info', 'اختر صفحات بالضغط عليها أو اكتب أرقام الصفحات مثل 1-3.');
-      return;
-    }
+    if (indices.length === 0) return;
 
     setBusy(true);
     try {
       const out = await extractPdfPages(activePdf.bytes, indices);
-      const name = `${activePdf.name.replace(/\.pdf$/i, '')}_مستخرج.pdf`;
-      await onSaveToHistory(name, out, indices.length, 'تقسيم واستخراج');
+      const name = `${activePdf.name.replace(/\.pdf$/i, '')}_extracted.pdf`;
+      await onSaveToHistory(name, out, indices.length, 'Extract Pages');
       downloadBlob(new Blob([out.buffer as ArrayBuffer], { type: 'application/pdf' }), name);
-      onNotify('success', `تم استخراج ${indices.length} صفحات بنجاح.`);
+      onNotify('success', `Extracted ${indices.length} pages.`);
     } catch {
-      onNotify('error', 'تعذر استخراج الصفحات المحددة.');
+      onNotify('error', 'Error extracting pages.');
     } finally {
       setBusy(false);
     }
@@ -341,26 +515,25 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
     try {
       const zipBlob = await splitAllPagesToZip(activePdf.bytes, activePdf.name);
       downloadBlob(zipBlob, `${activePdf.name.replace(/\.pdf$/i, '')}_split_pages.zip`);
-      onNotify('success', 'تم تقسيم كل صفحة في ملف مستقل داخل حزمة ZIP.');
+      onNotify('success', 'Split all pages into ZIP.');
     } catch {
-      onNotify('error', 'تعذر تقسيم الصفحات.');
+      onNotify('error', 'Error splitting pages.');
     } finally {
       setBusy(false);
     }
   };
 
-  // Compress handler
   const handleCompress = async () => {
     if (!activePdf) return;
     setBusy(true);
     try {
       const outBytes = await compressPdf(activePdf.bytes, compressQuality);
-      const name = `${activePdf.name.replace(/\.pdf$/i, '')}_مضغوط.pdf`;
+      const name = `${activePdf.name.replace(/\.pdf$/i, '')}_compressed.pdf`;
       setCompressedResult({ name, bytes: outBytes });
-      await onSaveToHistory(name, outBytes, pages.length, 'ضغط الحجم');
-      onNotify('success', 'تم ضغط الملف بنجاح.');
+      await onSaveToHistory(name, outBytes, pages.length, 'Compress PDF');
+      onNotify('success', 'PDF compressed successfully.');
     } catch {
-      onNotify('error', 'تعذر ضغط هذا الملف.');
+      onNotify('error', 'Error compressing file.');
     } finally {
       setBusy(false);
     }
@@ -379,7 +552,7 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
           setAnnotationsByPageId((prev) => ({ ...prev, [pid]: anns }));
           setWatermark(wm);
           setEditingPageId(null);
-          onNotify('success', 'تم حفظ تعديلات الصفحة. اضغط "حفظ وتصدير الملف" لتنزيل النسخة النهائية.');
+          onNotify('success', 'Page saved.');
         }}
         onApplyToAllPages={(imgAnn) => {
           setAnnotationsByPageId((prev) => {
@@ -389,15 +562,12 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
               const existing = next[p.id] || [];
               next[p.id] = [
                 ...existing,
-                {
-                  ...imgAnn,
-                  id: `${imgAnn.type}_all_${p.id}_${Date.now()}`,
-                },
+                { ...imgAnn, id: `${imgAnn.type}_all_${p.id}_${Date.now()}` },
               ];
             }
             return next;
           });
-          onNotify('success', 'تم تطبيق التوقيع/الصورة على جميع صفحات المستند.');
+          onNotify('success', 'Applied to all pages.');
         }}
         onClose={() => setEditingPageId(null)}
       />
@@ -405,52 +575,49 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 md:px-6 py-5 pb-28 md:pb-12 space-y-6">
+    <div className={`max-w-6xl mx-auto px-4 md:px-6 py-5 pb-28 md:pb-12 space-y-6 ${currentLang === 'ar' ? 'text-right' : 'text-left'}`}>
       {/* Sub-mode tabs */}
       <div className="flex items-center gap-1.5 p-1.5 bg-slate-200/70 rounded-2xl overflow-x-auto no-scrollbar">
-        {EDIT_TABS.map((t) => (
+        {t.tabs.map((item) => (
           <button
-            key={t.id}
+            key={item.id}
             type="button"
-            onClick={() => setMode(t.id)}
+            onClick={() => setMode(item.id as EditMode)}
             className={`min-h-[42px] px-4 py-2 rounded-xl text-xs md:text-sm font-semibold whitespace-nowrap shrink-0 transition-all cursor-pointer ${
-              mode === t.id
+              mode === item.id
                 ? 'bg-white text-slate-900 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            {t.label}
+            {item.label}
           </button>
         ))}
       </div>
 
-      {/* Empty state if no active PDF for pages/split/compress */}
       {!activePdf && mode !== 'merge' ? (
         <div className="bg-white rounded-2xl border border-slate-200 p-8 md:p-12 text-center space-y-4">
-          <h2 className="text-lg font-bold text-slate-900">لم تختر ملف PDF بعد</h2>
-          <p className="text-sm text-slate-500 max-w-md mx-auto">
-            اختر ملفاً من هاتفك للبدء في تعديل النصوص، إدراج الصور، التوقيع، أو إعادة ترتيب الصفحات.
-          </p>
+          <h2 className="text-lg font-bold text-slate-900">{t.noPdfTitle}</h2>
+          <p className="text-sm text-slate-500 max-w-md mx-auto">{t.noPdfDesc}</p>
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
             <button
               type="button"
               onClick={onSelectNewPdf}
               className="min-h-[48px] px-5 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 cursor-pointer"
             >
-              اختيار ملف من الجهاز
+              {t.chooseFile}
             </button>
             <button
               type="button"
               onClick={onLoadSamplePdf}
               className="min-h-[48px] px-5 py-2.5 rounded-xl border border-slate-200 text-slate-800 text-sm font-medium hover:bg-slate-50 cursor-pointer"
             >
-              تجربة بملف جاهز
+              {t.trySample}
             </button>
           </div>
         </div>
       ) : null}
 
-      {/* MODE: PAGES ORGANIZER & ANNOTATE */}
+      {/* MODE: PAGES */}
       {mode === 'pages' && activePdf && (
         <div className="space-y-5">
           <div className="bg-white rounded-2xl border border-slate-200 p-4 md:p-5 flex flex-wrap items-center justify-between gap-3">
@@ -459,15 +626,14 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
                 {activePdf.name}
               </h2>
               <p className="text-xs text-slate-500 font-mono-num">
-                {activePages.length} صفحة نشطة · {formatBytes(activePdf.bytes.byteLength)}
+                {activePages.length} {t.activePages} · {formatBytes(activePdf.bytes.byteLength)}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => printPdfBytes(activePdf.bytes, activePdf.name)}
-                aria-label="طباعة الملف الأصلي"
-                title="طباعة"
+                title={t.print}
                 className="min-h-[42px] min-w-[42px] flex items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
               >
                 <Printer className="w-4 h-4" />
@@ -475,8 +641,7 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
               <button
                 type="button"
                 onClick={() => handleShareOrDownload(activePdf.bytes, activePdf.name)}
-                aria-label="مشاركة الملف الأصلي"
-                title="مشاركة"
+                title={t.share}
                 className="min-h-[42px] min-w-[42px] flex items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
               >
                 <Share2 className="w-4 h-4" />
@@ -486,7 +651,7 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
                 onClick={onSelectNewPdf}
                 className="min-h-[42px] px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50 cursor-pointer"
               >
-                تغيير الملف
+                {t.changeFile}
               </button>
               <button
                 type="button"
@@ -495,7 +660,7 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
                 className="min-h-[42px] px-4 py-2 rounded-xl bg-red-600 text-white text-xs md:text-sm font-semibold hover:bg-red-700 disabled:opacity-40 flex items-center gap-1.5 cursor-pointer"
               >
                 <Check className="w-4 h-4" />
-                <span>{busy ? 'جاري الحفظ...' : 'حفظ وتصدير الملف'}</span>
+                <span>{busy ? t.saving : t.saveAndExport}</span>
               </button>
             </div>
           </div>
@@ -503,9 +668,7 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
           {savedOutput && (
             <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-4 flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-bold text-emerald-900">
-                  تم تجهيز الملف المعدل
-                </p>
+                <p className="text-sm font-bold text-emerald-900">{t.readyOutput}</p>
                 <p className="text-xs text-emerald-800 font-mono-num">
                   {savedOutput.name} · {formatBytes(savedOutput.bytes.byteLength)}
                 </p>
@@ -522,23 +685,7 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
                   className="min-h-[42px] px-4 rounded-xl bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
                 >
                   <Download className="w-4 h-4" />
-                  <span>حفظ</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => printPdfBytes(savedOutput.bytes, savedOutput.name)}
-                  className="min-h-[42px] px-4 rounded-xl bg-white border border-emerald-300 text-emerald-900 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Printer className="w-4 h-4" />
-                  <span>طباعة</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleShareOrDownload(savedOutput.bytes, savedOutput.name)}
-                  className="min-h-[42px] px-4 rounded-xl bg-white border border-emerald-300 text-emerald-900 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Share2 className="w-4 h-4" />
-                  <span>مشاركة</span>
+                  <span>{t.save}</span>
                 </button>
               </div>
             </div>
@@ -546,7 +693,7 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
 
           {loadingThumbs ? (
             <div className="bg-white rounded-2xl border border-slate-200 py-16 text-center text-sm text-slate-500">
-              جاري عرض معاينة الصفحات...
+              {t.loadingThumbs}
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -557,9 +704,7 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
                   <div
                     key={p.id}
                     className={`rounded-2xl border bg-white p-3 flex flex-col gap-2.5 transition-opacity ${
-                      p.deleted
-                        ? 'opacity-45 border-dashed border-slate-300'
-                        : 'border-slate-200'
+                      p.deleted ? 'opacity-45 border-dashed border-slate-300' : 'border-slate-200'
                     }`}
                   >
                     <button
@@ -570,25 +715,25 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
                     >
                       <img
                         src={p.thumbnailUrl}
-                        alt={`صفحة ${p.originalIndex + 1}`}
+                        alt={`Page`}
                         style={{ transform: `rotate(${p.rotation}deg)` }}
                         className="max-h-full max-w-full object-contain transition-transform"
                       />
                       {!p.deleted && (
                         <div className="absolute inset-x-0 bottom-0 bg-slate-900/75 text-white text-[11px] font-medium py-1.5 opacity-95 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
                           <PenLine className="w-3.5 h-3.5" />
-                          <span>تعديل / إضافة نص</span>
+                          <span>{t.editOrAddText}</span>
                         </div>
                       )}
                     </button>
 
                     <div className="flex items-center justify-between text-xs text-slate-600">
                       <span className="font-mono-num font-semibold">
-                        {p.deleted ? 'محذوفة' : `صفحة ${activeIndex + 1}`}
+                        {p.deleted ? t.deleted : `${t.page} ${activeIndex + 1}`}
                       </span>
                       {annCount > 0 && !p.deleted && (
                         <span className="text-[11px] font-medium text-red-600 tabular-nums">
-                          {annCount} تعديل
+                          {annCount} {t.editCount}
                         </span>
                       )}
                     </div>
@@ -598,7 +743,6 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
                         type="button"
                         disabled={p.deleted}
                         onClick={() => movePage(p.id, -1)}
-                        aria-label="نقل لليمين"
                         className="min-h-[38px] min-w-[36px] flex items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-30 cursor-pointer"
                       >
                         <ArrowRight className="w-4 h-4" />
@@ -607,7 +751,6 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
                         type="button"
                         disabled={p.deleted}
                         onClick={() => movePage(p.id, 1)}
-                        aria-label="نقل لليسار"
                         className="min-h-[38px] min-w-[36px] flex items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-30 cursor-pointer"
                       >
                         <ArrowLeft className="w-4 h-4" />
@@ -616,7 +759,6 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
                         type="button"
                         disabled={p.deleted}
                         onClick={() => rotatePage(p.id)}
-                        aria-label="تدوير 90 درجة"
                         className="min-h-[38px] min-w-[36px] flex items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-30 cursor-pointer"
                       >
                         <RotateCw className="w-4 h-4" />
@@ -624,18 +766,11 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
                       <button
                         type="button"
                         onClick={() => toggleDeletePage(p.id)}
-                        aria-label={p.deleted ? 'استعادة الصفحة' : 'حذف الصفحة'}
                         className={`min-h-[38px] min-w-[36px] flex items-center justify-center rounded-lg cursor-pointer ${
-                          p.deleted
-                            ? 'text-emerald-700 hover:bg-emerald-50'
-                            : 'text-red-600 hover:bg-red-50'
+                          p.deleted ? 'text-emerald-700 hover:bg-emerald-50' : 'text-red-600 hover:bg-red-50'
                         }`}
                       >
-                        {p.deleted ? (
-                          <Undo2 className="w-4 h-4" />
-                        ) : (
-                          <Trash2 className="w-4 h-4" />
-                        )}
+                        {p.deleted ? <Undo2 className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
@@ -651,10 +786,8 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
         <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-bold text-slate-900">دمج عدة ملفات PDF</h2>
-              <p className="text-sm text-slate-500">
-                أضف الملفات ورتبها كما تريد ثم ادمجها في ملف واحد
-              </p>
+              <h2 className="text-lg font-bold text-slate-900">{t.mergeTitle}</h2>
+              <p className="text-sm text-slate-500">{t.mergeDesc}</p>
             </div>
             <button
               type="button"
@@ -662,7 +795,7 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
               className="min-h-[44px] px-4 py-2 rounded-xl bg-slate-900 text-white text-xs md:text-sm font-semibold flex items-center gap-2 cursor-pointer"
             >
               <FilePlus2 className="w-4 h-4" />
-              <span>إضافة ملفات PDF</span>
+              <span>{t.addPdfFiles}</span>
             </button>
           </div>
 
@@ -672,21 +805,18 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
               onClick={() => mergeInputRef.current?.click()}
               className="w-full py-12 rounded-2xl border-2 border-dashed border-slate-200 text-sm font-medium text-slate-600 hover:border-red-300 cursor-pointer"
             >
-              اضغط لاختيار ملفين أو أكثر من هاتفك
+              {t.mergePrompt}
             </button>
           ) : (
             <div className="divide-y divide-slate-100 border border-slate-200 rounded-2xl overflow-hidden">
               {mergeList.map((item, idx) => (
-                <div
-                  key={item.id}
-                  className="px-4 py-3 flex items-center justify-between gap-3 bg-white"
-                >
+                <div key={item.id} className="px-4 py-3 flex items-center justify-between gap-3 bg-white">
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-slate-900 truncate">
                       {idx + 1}. {item.name}
                     </p>
                     <p className="text-xs text-slate-500 font-mono-num">
-                      {item.pageCount} صفحات · {formatBytes(item.bytes.byteLength)}
+                      {item.pageCount} pages · {formatBytes(item.bytes.byteLength)}
                     </p>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
@@ -708,9 +838,7 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
                     </button>
                     <button
                       type="button"
-                      onClick={() =>
-                        setMergeList((prev) => prev.filter((x) => x.id !== item.id))
-                      }
+                      onClick={() => setMergeList((prev) => prev.filter((x) => x.id !== item.id))}
                       className="min-h-[40px] min-w-[36px] flex items-center justify-center rounded-lg text-red-600 hover:bg-red-50 cursor-pointer"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -729,40 +857,22 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
               className="min-h-[48px] px-6 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-40 flex items-center gap-2 cursor-pointer"
             >
               <Layers className="w-4 h-4" />
-              <span>دمج {mergeList.length} ملفات</span>
+              <span>{t.mergeBtn}</span>
             </button>
             {mergedResult && (
-              <>
-                <button
-                  type="button"
-                  onClick={() =>
-                    downloadBlob(
-                      new Blob([mergedResult.bytes.buffer as ArrayBuffer], { type: 'application/pdf' }),
-                      mergedResult.name
-                    )
-                  }
-                  className="min-h-[48px] px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-semibold flex items-center gap-2 cursor-pointer"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>حفظ ({formatBytes(mergedResult.bytes.byteLength)})</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => printPdfBytes(mergedResult.bytes, mergedResult.name)}
-                  className="min-h-[48px] px-4 py-2.5 rounded-xl border border-slate-200 text-slate-800 text-sm font-semibold flex items-center gap-2 cursor-pointer hover:bg-slate-50"
-                >
-                  <Printer className="w-4 h-4" />
-                  <span>طباعة</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleShareOrDownload(mergedResult.bytes, mergedResult.name)}
-                  className="min-h-[48px] px-4 py-2.5 rounded-xl border border-slate-200 text-slate-800 text-sm font-semibold flex items-center gap-2 cursor-pointer hover:bg-slate-50"
-                >
-                  <Share2 className="w-4 h-4" />
-                  <span>مشاركة</span>
-                </button>
-              </>
+              <button
+                type="button"
+                onClick={() =>
+                  downloadBlob(
+                    new Blob([mergedResult.bytes.buffer as ArrayBuffer], { type: 'application/pdf' }),
+                    mergedResult.name
+                  )
+                }
+                className="min-h-[48px] px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-semibold flex items-center gap-2 cursor-pointer"
+              >
+                <Download className="w-4 h-4" />
+                <span>{t.save} ({formatBytes(mergedResult.bytes.byteLength)})</span>
+              </button>
             )}
           </div>
         </div>
@@ -773,10 +883,8 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
         <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-bold text-slate-900">تقسيم واستخراج الصفحات</h2>
-              <p className="text-sm text-slate-500">
-                اضغط على الصفحات المطلوبة أو أدخل النطاق مثل 1-3, 5
-              </p>
+              <h2 className="text-lg font-bold text-slate-900">{t.splitTitle}</h2>
+              <p className="text-sm text-slate-500">{t.splitDesc}</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <input
@@ -794,7 +902,7 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
                 className="min-h-[44px] px-4 py-2 rounded-xl bg-red-600 text-white text-xs md:text-sm font-semibold flex items-center gap-1.5 cursor-pointer"
               >
                 <Scissors className="w-4 h-4" />
-                <span>استخراج المحدد ({selectedSplitIndices.length})</span>
+                <span>{t.extractSelected} ({selectedSplitIndices.length})</span>
               </button>
               <button
                 type="button"
@@ -802,7 +910,7 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
                 onClick={handleSplitAllZip}
                 className="min-h-[44px] px-4 py-2 rounded-xl border border-slate-200 text-slate-800 text-xs md:text-sm font-medium cursor-pointer"
               >
-                تقسيم الكل (ZIP)
+                {t.splitAllZip}
               </button>
             </div>
           </div>
@@ -816,27 +924,17 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
                   type="button"
                   onClick={() =>
                     setSelectedSplitIndices((prev) =>
-                      prev.includes(idx)
-                        ? prev.filter((x) => x !== idx)
-                        : [...prev, idx]
+                      prev.includes(idx) ? prev.filter((x) => x !== idx) : [...prev, idx]
                     )
                   }
                   className={`rounded-xl border-2 p-2 text-center space-y-1.5 cursor-pointer transition-all ${
-                    isSelected
-                      ? 'border-red-600 bg-red-50/40'
-                      : 'border-slate-200 bg-slate-50 hover:border-slate-300'
+                    isSelected ? 'border-red-600 bg-red-50/40' : 'border-slate-200 bg-slate-50 hover:border-slate-300'
                   }`}
                 >
                   <div className="aspect-[3/4] rounded-lg overflow-hidden bg-white">
-                    <img
-                      src={p.thumbnailUrl}
-                      alt={`صفحة ${idx + 1}`}
-                      className="w-full h-full object-contain"
-                    />
+                    <img src={p.thumbnailUrl} alt={`Page`} className="w-full h-full object-contain" />
                   </div>
-                  <span className="text-xs font-mono-num font-semibold text-slate-700">
-                    {idx + 1}
-                  </span>
+                  <span className="text-xs font-mono-num font-semibold text-slate-700">{idx + 1}</span>
                 </button>
               );
             })}
@@ -848,26 +946,20 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
       {mode === 'compress' && activePdf && (
         <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-5 max-w-2xl">
           <div>
-            <h2 className="text-lg font-bold text-slate-900">ضغط وتصغير حجم PDF</h2>
+            <h2 className="text-lg font-bold text-slate-900">{t.compressTitle}</h2>
             <p className="text-sm text-slate-500 font-mono-num">
-              {activePdf.name} · الحجم الحالي: {formatBytes(activePdf.bytes.byteLength)}
+              {activePdf.name} · {t.currentSize}: {formatBytes(activePdf.bytes.byteLength)}
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {[
-              { id: 'high' as const, title: 'جودة عالية', desc: 'مناسب للطباعة مع تقليل خفيف' },
-              { id: 'medium' as const, title: 'توازن مثالي', desc: 'أوضح قراءة بأصغر حجم' },
-              { id: 'compact' as const, title: 'حجم للمراسلة', desc: 'أقصى ضغط للإرسال السريع' },
-            ].map((q) => (
+            {t.compressQuality.map((q) => (
               <button
                 key={q.id}
                 type="button"
-                onClick={() => setCompressQuality(q.id)}
+                onClick={() => setCompressQuality(q.id as any)}
                 className={`p-3.5 rounded-2xl border text-right space-y-1 cursor-pointer transition-all ${
-                  compressQuality === q.id
-                    ? 'border-red-600 bg-red-50/40'
-                    : 'border-slate-200 hover:border-slate-300'
+                  compressQuality === q.id ? 'border-red-600 bg-red-50/40' : 'border-slate-200 hover:border-slate-300'
                 }`}
               >
                 <p className="text-sm font-bold text-slate-900">{q.title}</p>
@@ -883,58 +975,31 @@ export const PdfEditorStudio: React.FC<PdfEditorStudioProps> = ({
             className="min-h-[48px] px-6 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 flex items-center gap-2 cursor-pointer"
           >
             <Minimize2 className="w-4 h-4" />
-            <span>{busy ? 'جاري الضغط...' : 'ضغط الملف الآن'}</span>
+            <span>{busy ? t.compressing : t.compressBtn}</span>
           </button>
 
           {compressedResult && (
             <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 flex flex-wrap items-center justify-between gap-3">
               <div className="space-y-0.5">
-                <p className="text-sm font-bold text-slate-900">تم ضغط الملف</p>
+                <p className="text-sm font-bold text-slate-900">{t.compressedSuccess}</p>
                 <p className="text-xs text-slate-600 font-mono-num">
-                  الحجم الجديد: {formatBytes(compressedResult.bytes.byteLength)} (توفير{' '}
-                  {Math.max(
-                    0,
-                    Math.round(
-                      (1 -
-                        compressedResult.bytes.byteLength /
-                          activePdf.bytes.byteLength) *
-                        100
-                    )
-                  )}
-                  %)
+                  {t.newSize}: {formatBytes(compressedResult.bytes.byteLength)} ({t.savingPercent}{' '}
+                  {Math.max(0, Math.round((1 - compressedResult.bytes.byteLength / activePdf.bytes.byteLength) * 100))}%)
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() =>
-                    downloadBlob(
-                      new Blob([compressedResult.bytes.buffer as ArrayBuffer], { type: 'application/pdf' }),
-                      compressedResult.name
-                    )
-                  }
-                  className="min-h-[42px] px-4 rounded-xl bg-slate-900 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>حفظ</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => printPdfBytes(compressedResult.bytes, compressedResult.name)}
-                  className="min-h-[42px] px-3.5 rounded-xl bg-white border border-slate-200 text-slate-800 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Printer className="w-4 h-4" />
-                  <span>طباعة</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleShareOrDownload(compressedResult.bytes, compressedResult.name)}
-                  className="min-h-[42px] px-3.5 rounded-xl bg-white border border-slate-200 text-slate-800 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Share2 className="w-4 h-4" />
-                  <span>مشاركة</span>
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  downloadBlob(
+                    new Blob([compressedResult.bytes.buffer as ArrayBuffer], { type: 'application/pdf' }),
+                    compressedResult.name
+                  )
+                }
+                className="min-h-[42px] px-4 rounded-xl bg-slate-900 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+              >
+                <Download className="w-4 h-4" />
+                <span>{t.save}</span>
+              </button>
             </div>
           )}
         </div>
