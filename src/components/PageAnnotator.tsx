@@ -43,6 +43,7 @@ interface PageAnnotatorProps {
   totalPages: number;
   initialAnnotations: PageAnnotation[];
   watermark: WatermarkConfig;
+  currentLang?: 'ar' | 'en' | 'fr' | 'es';
   onSavePage: (
     pageId: string,
     annotations: PageAnnotation[],
@@ -65,6 +66,229 @@ const COLOR_SWATCHES = [
 
 const HIGHLIGHT_SWATCHES = ['#FACC15', '#4ADE80', '#FB7185', '#60A5FA'];
 
+const translations = {
+  ar: {
+    back: 'رجوع',
+    pageOf: (p: number, total: number) => `صفحة ${p} من ${total}`,
+    zoomOut: 'تصغير',
+    zoomIn: 'تكبير',
+    undo: 'تراجع',
+    savePage: 'حفظ الصفحة',
+    loadingPage: 'جاري تجهيز الصفحة عالية الدقة...',
+    defaultText: 'اكتب النص هنا',
+    emptyText: 'نص فارغ',
+    textPropsTitle: 'تعديل خصائص النص',
+    deleteText: 'حذف النص',
+    closeProps: 'إغلاق الخصائص',
+    enterTextPlaceholder: 'أدخل النص...',
+    fontFamily: 'نوع الخط',
+    fontSans: 'حديث',
+    fontSerif: 'كلاسيكي',
+    fontMono: 'تقني',
+    size: 'الحجم',
+    lineWidth: 'عرض السطر',
+    bold: 'خط عريض',
+    alignRight: 'محاذاة لليمين',
+    alignCenter: 'توسيط',
+    alignLeft: 'محاذاة لليسار',
+    whiteBgCover: 'خلفية بيضاء لتغطية نص قديم تحته',
+    editSigProps: 'تعديل حجم وموضع التوقيع',
+    editImgProps: 'تعديل الصورة المدرجة',
+    delete: 'حذف',
+    opacity: 'الشفافية',
+    applyToAll: (total: number) => `تطبيق على جميع الصفحات (${total})`,
+    penProps: 'خصائص القلم الحر',
+    highlightProps: 'خصائص التظليل',
+    strokeWidth: 'سُمك الخط',
+    toolMove: 'تحريك',
+    toolAddText: 'إضافة نص',
+    toolEditText: 'تعديل نص',
+    toolAddImg: 'إدراج صورة',
+    toolSign: 'توقيع',
+    toolPen: 'قلم',
+    toolHighlight: 'تظليل',
+    toolWatermark: 'علامة مائية',
+    pickLineTitle: 'اختر سطراً لتعديله واستبداله',
+    readingText: 'جاري قراءة نصوص الصفحة...',
+    noDigitalTextTitle: 'لم يتم العثور على نصوص رقمية مباشرة في هذه الصفحة.',
+    noDigitalTextDesc:
+      'إذا كانت الصفحة ممسوحة ضوئياً كصورة، يمكنك استخدام أداة إضافة نص بخلفية بيضاء لتغطية الجزء المطلوب أو استخدام أداة OCR في المحول.',
+    replacementText: 'نص بديل',
+    addWhiteBgBox: 'إضافة صندوق نص بخلفية بيضاء',
+    watermarkModalTitle: 'العلامة المائية للمستند',
+    enableWatermark: 'تفعيل العلامة المائية',
+    watermarkTextLabel: 'نص العلامة المائية',
+    watermarkPlaceholder: 'مثال: سري للغاية / نسخة أصلية',
+    angle: 'الميل',
+    apply: 'تطبيق',
+  },
+  en: {
+    back: 'Back',
+    pageOf: (p: number, total: number) => `Page ${p} of ${total}`,
+    zoomOut: 'Zoom Out',
+    zoomIn: 'Zoom In',
+    undo: 'Undo',
+    savePage: 'Save Page',
+    loadingPage: 'Preparing high-resolution page...',
+    defaultText: 'Type text here',
+    emptyText: 'Empty text',
+    textPropsTitle: 'Edit Text Properties',
+    deleteText: 'Delete text',
+    closeProps: 'Close properties',
+    enterTextPlaceholder: 'Enter text...',
+    fontFamily: 'Font Family',
+    fontSans: 'Modern',
+    fontSerif: 'Classic',
+    fontMono: 'Mono',
+    size: 'Size',
+    lineWidth: 'Line Width',
+    bold: 'Bold',
+    alignRight: 'Align Right',
+    alignCenter: 'Center',
+    alignLeft: 'Align Left',
+    whiteBgCover: 'White background to cover old text underneath',
+    editSigProps: 'Edit Signature Size & Position',
+    editImgProps: 'Edit Inserted Image',
+    delete: 'Delete',
+    opacity: 'Opacity',
+    applyToAll: (total: number) => `Apply to all pages (${total})`,
+    penProps: 'Freehand Pen Properties',
+    highlightProps: 'Highlighter Properties',
+    strokeWidth: 'Stroke Width',
+    toolMove: 'Move',
+    toolAddText: 'Add Text',
+    toolEditText: 'Edit Text',
+    toolAddImg: 'Add Image',
+    toolSign: 'Signature',
+    toolPen: 'Pen',
+    toolHighlight: 'Highlight',
+    toolWatermark: 'Watermark',
+    pickLineTitle: 'Select a line to edit & replace',
+    readingText: 'Reading page text...',
+    noDigitalTextTitle: 'No direct digital text found on this page.',
+    noDigitalTextDesc:
+      'If this page is a scanned image, you can add a text box with a white background to cover the area, or use the OCR tool in the Converter.',
+    replacementText: 'Replacement text',
+    addWhiteBgBox: 'Add text box with white background',
+    watermarkModalTitle: 'Document Watermark',
+    enableWatermark: 'Enable Watermark',
+    watermarkTextLabel: 'Watermark Text',
+    watermarkPlaceholder: 'e.g. CONFIDENTIAL / ORIGINAL',
+    angle: 'Angle',
+    apply: 'Apply',
+  },
+  fr: {
+    back: 'Retour',
+    pageOf: (p: number, total: number) => `Page ${p} sur ${total}`,
+    zoomOut: 'Zoom arrière',
+    zoomIn: 'Zoom avant',
+    undo: 'Annuler',
+    savePage: 'Enregistrer',
+    loadingPage: 'Préparation de la page haute résolution...',
+    defaultText: 'Écrivez le texte ici',
+    emptyText: 'Texte vide',
+    textPropsTitle: 'Propriétés du texte',
+    deleteText: 'Supprimer le texte',
+    closeProps: 'Fermer',
+    enterTextPlaceholder: 'Entrez le texte...',
+    fontFamily: 'Police',
+    fontSans: 'Moderne',
+    fontSerif: 'Classique',
+    fontMono: 'Mono',
+    size: 'Taille',
+    lineWidth: 'Largeur',
+    bold: 'Gras',
+    alignRight: 'Aligner à droite',
+    alignCenter: 'Centrer',
+    alignLeft: 'Aligner à gauche',
+    whiteBgCover: 'Fond blanc pour masquer l’ancien texte',
+    editSigProps: 'Taille et position de la signature',
+    editImgProps: 'Modifier l’image insérée',
+    delete: 'Supprimer',
+    opacity: 'Opacité',
+    applyToAll: (total: number) => `Appliquer à toutes les pages (${total})`,
+    penProps: 'Propriétés du stylo',
+    highlightProps: 'Propriétés du surligneur',
+    strokeWidth: 'Épaisseur',
+    toolMove: 'Déplacer',
+    toolAddText: 'Ajouter texte',
+    toolEditText: 'Éditer texte',
+    toolAddImg: 'Image',
+    toolSign: 'Signature',
+    toolPen: 'Stylo',
+    toolHighlight: 'Surligner',
+    toolWatermark: 'Filigrane',
+    pickLineTitle: 'Choisissez une ligne à modifier',
+    readingText: 'Lecture du texte de la page...',
+    noDigitalTextTitle: 'Aucun texte numérique direct trouvé sur cette page.',
+    noDigitalTextDesc:
+      'Si la page est numérisée comme une image, ajoutez une zone de texte avec fond blanc ou utilisez l’outil OCR.',
+    replacementText: 'Texte de remplacement',
+    addWhiteBgBox: 'Ajouter un texte avec fond blanc',
+    watermarkModalTitle: 'Filigrane du document',
+    enableWatermark: 'Activer le filigrane',
+    watermarkTextLabel: 'Texte du filigrane',
+    watermarkPlaceholder: 'ex. CONFIDENTIEL / ORIGINAL',
+    angle: 'Angle',
+    apply: 'Appliquer',
+  },
+  es: {
+    back: 'Volver',
+    pageOf: (p: number, total: number) => `Página ${p} de ${total}`,
+    zoomOut: 'Alejar',
+    zoomIn: 'Acercar',
+    undo: 'Deshacer',
+    savePage: 'Guardar Página',
+    loadingPage: 'Preparando página de alta resolución...',
+    defaultText: 'Escribe el texto aquí',
+    emptyText: 'Texto vacío',
+    textPropsTitle: 'Propiedades del texto',
+    deleteText: 'Eliminar texto',
+    closeProps: 'Cerrar',
+    enterTextPlaceholder: 'Introduce el texto...',
+    fontFamily: 'Tipo de letra',
+    fontSans: 'Moderna',
+    fontSerif: 'Clásica',
+    fontMono: 'Técnica',
+    size: 'Tamaño',
+    lineWidth: 'Ancho de línea',
+    bold: 'Negrita',
+    alignRight: 'Alinear a la derecha',
+    alignCenter: 'Centrar',
+    alignLeft: 'Alinear a la izquierda',
+    whiteBgCover: 'Fondo blanco para cubrir texto antiguo debajo',
+    editSigProps: 'Editar tamaño y posición de firma',
+    editImgProps: 'Editar imagen insertada',
+    delete: 'Eliminar',
+    opacity: 'Opacidad',
+    applyToAll: (total: number) => `Aplicar a todas las páginas (${total})`,
+    penProps: 'Propiedades del lápiz',
+    highlightProps: 'Propiedades del resaltador',
+    strokeWidth: 'Grosor del trazo',
+    toolMove: 'Mover',
+    toolAddText: 'Añadir texto',
+    toolEditText: 'Editar texto',
+    toolAddImg: 'Añadir imagen',
+    toolSign: 'Firma',
+    toolPen: 'Lápiz',
+    toolHighlight: 'Resaltar',
+    toolWatermark: 'Marca de agua',
+    pickLineTitle: 'Elige una línea para editar y reemplazar',
+    readingText: 'Leyendo texto de la página...',
+    noDigitalTextTitle: 'No se encontró texto digital directo en esta página.',
+    noDigitalTextDesc:
+      'Si la página está escaneada como imagen, puedes añadir un cuadro de texto con fondo blanco o usar la herramienta OCR en el Convertidor.',
+    replacementText: 'Texto de reemplazo',
+    addWhiteBgBox: 'Añadir cuadro de texto con fondo blanco',
+    watermarkModalTitle: 'Marca de agua del documento',
+    enableWatermark: 'Activar marca de agua',
+    watermarkTextLabel: 'Texto de la marca de agua',
+    watermarkPlaceholder: 'ej. CONFIDENCIAL / ORIGINAL',
+    angle: 'Ángulo',
+    apply: 'Aplicar',
+  },
+};
+
 export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
   sourceBytes,
   page,
@@ -72,10 +296,14 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
   totalPages,
   initialAnnotations,
   watermark: initialWatermark,
+  currentLang = 'es',
   onSavePage,
   onApplyToAllPages,
   onClose,
 }) => {
+  const t = translations[currentLang];
+  const isRtl = currentLang === 'ar';
+
   const [pageRender, setPageRender] = useState<{
     dataUrl: string;
     width: number;
@@ -193,7 +421,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
     const newAnn: TextAnnotation = {
       id: `txt_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
       type: 'text',
-      text: prefill?.text ?? 'اكتب النص هنا',
+      text: prefill?.text ?? t.defaultText,
       x: prefill?.x ?? 0.25,
       y: prefill?.y ?? 0.2,
       width: prefill?.width ?? 0.5,
@@ -201,7 +429,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
       fontFamily: prefill?.fontFamily ?? 'sans',
       fontSize: prefill?.fontSize ?? 28,
       bold: prefill?.bold ?? false,
-      align: prefill?.align ?? 'right',
+      align: prefill?.align ?? (isRtl ? 'right' : 'left'),
       backgroundColor: prefill?.backgroundColor ?? 'transparent',
     };
     setAnnotations((prev) => [...prev, newAnn]);
@@ -323,12 +551,12 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
             type="button"
             onClick={onClose}
             className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-slate-700 hover:bg-slate-100 cursor-pointer"
-            aria-label="رجوع"
+            aria-label={t.back}
           >
-            <ArrowRight className="w-5 h-5" />
+            <ArrowRight className={`w-5 h-5 ${!isRtl ? 'rotate-180' : ''}`} />
           </button>
           <span className="text-sm font-semibold text-slate-900 tabular-nums whitespace-nowrap">
-            صفحة {pageNumber} من {totalPages}
+            {t.pageOf(pageNumber, totalPages)}
           </span>
         </div>
 
@@ -336,7 +564,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
           <button
             type="button"
             onClick={() => setZoom((z) => Math.max(0.75, Number((z - 0.25).toFixed(2))))}
-            aria-label="تصغير"
+            aria-label={t.zoomOut}
             className="hidden sm:flex min-h-[40px] min-w-[40px] items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100 cursor-pointer"
           >
             <ZoomOut className="w-4 h-4" />
@@ -344,7 +572,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
           <button
             type="button"
             onClick={() => setZoom((z) => Math.min(2, Number((z + 0.25).toFixed(2))))}
-            aria-label="تكبير"
+            aria-label={t.zoomIn}
             className="hidden sm:flex min-h-[40px] min-w-[40px] items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100 cursor-pointer"
           >
             <ZoomIn className="w-4 h-4" />
@@ -353,7 +581,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
             type="button"
             onClick={handleUndo}
             disabled={annotations.length === 0}
-            aria-label="تراجع"
+            aria-label={t.undo}
             className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-slate-700 hover:bg-slate-100 disabled:opacity-35 cursor-pointer"
           >
             <Undo2 className="w-5 h-5" />
@@ -364,7 +592,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
             className="min-h-[40px] px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 active:scale-[0.98] flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
           >
             <Check className="w-4 h-4" />
-            <span>حفظ الصفحة</span>
+            <span>{t.savePage}</span>
           </button>
         </div>
       </header>
@@ -375,7 +603,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
         <div className="flex-1 overflow-auto p-3 md:p-6 flex items-start justify-center">
           {!pageRender ? (
             <div className="w-full max-w-md aspect-[3/4] bg-white rounded-2xl border border-slate-200 flex items-center justify-center text-sm text-slate-500">
-              جاري تجهيز الصفحة عالية الدقة...
+              {t.loadingPage}
             </div>
           ) : (
             <div
@@ -397,7 +625,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
             >
               <img
                 src={pageRender.dataUrl}
-                alt={`صفحة ${pageNumber}`}
+                alt={`Page ${pageNumber}`}
                 draggable={false}
                 className="w-full h-full object-contain pointer-events-none select-none"
               />
@@ -481,7 +709,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
                     >
                       <img
                         src={imgAnn.dataUrl}
-                        alt={imgAnn.type === 'signature' ? 'توقيع' : 'صورة مضافة'}
+                        alt={imgAnn.type}
                         draggable={false}
                         className="w-full h-full object-contain pointer-events-none"
                       />
@@ -531,7 +759,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
                           : 'ring-1 ring-dashed ring-slate-300/80 hover:ring-slate-500'
                       }`}
                     >
-                      {txt.text || 'نص فارغ'}
+                      {txt.text || t.emptyText}
                     </div>
                   );
                 })}
@@ -539,18 +767,18 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
           )}
         </div>
 
-        {/* Contextual Properties Panel (Right side on Desktop, Collapsible Bar above Toolbar on Mobile) */}
+        {/* Contextual Properties Panel */}
         {(selectedAnnotation || tool === 'pen' || tool === 'highlight') && (
           <aside className="lg:w-80 bg-white border-t lg:border-t-0 lg:border-r border-slate-200 p-4 overflow-y-auto max-h-[38vh] lg:max-h-none shrink-0 space-y-4">
             {selectedAnnotation?.type === 'text' && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold text-slate-900">تعديل خصائص النص</span>
+                  <span className="text-sm font-bold text-slate-900">{t.textPropsTitle}</span>
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
                       onClick={deleteSelected}
-                      aria-label="حذف النص"
+                      aria-label={t.deleteText}
                       className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg text-red-600 hover:bg-red-50 cursor-pointer"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -558,7 +786,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
                     <button
                       type="button"
                       onClick={() => setSelectedId(null)}
-                      aria-label="إغلاق الخصائص"
+                      aria-label={t.closeProps}
                       className="lg:hidden min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100"
                     >
                       <X className="w-4 h-4" />
@@ -571,19 +799,19 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
                   value={selectedAnnotation.text}
                   onChange={(e) => updateSelectedText({ text: e.target.value })}
                   className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-red-600"
-                  placeholder="أدخل النص..."
+                  placeholder={t.enterTextPlaceholder}
                 />
 
                 {/* Font Family */}
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1.5">
-                    نوع الخط
+                    {t.fontFamily}
                   </label>
                   <div className="grid grid-cols-3 gap-1.5 bg-slate-100 p-1 rounded-xl">
                     {[
-                      { id: 'sans' as const, label: 'حديث' },
-                      { id: 'serif' as const, label: 'كلاسيكي' },
-                      { id: 'mono' as const, label: 'تقني' },
+                      { id: 'sans' as const, label: t.fontSans },
+                      { id: 'serif' as const, label: t.fontSerif },
+                      { id: 'mono' as const, label: t.fontMono },
                     ].map((f) => (
                       <button
                         key={f.id}
@@ -605,7 +833,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <div className="flex justify-between text-xs text-slate-600 mb-1">
-                      <span>الحجم</span>
+                      <span>{t.size}</span>
                       <span className="font-mono-num font-semibold">
                         {selectedAnnotation.fontSize}
                       </span>
@@ -623,7 +851,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
                   </div>
                   <div>
                     <div className="flex justify-between text-xs text-slate-600 mb-1">
-                      <span>عرض السطر</span>
+                      <span>{t.lineWidth}</span>
                       <span className="font-mono-num font-semibold">
                         {Math.round((selectedAnnotation.width || 0.45) * 100)}%
                       </span>
@@ -649,7 +877,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
                         key={c}
                         type="button"
                         onClick={() => updateSelectedText({ color: c })}
-                        aria-label={`لون ${c}`}
+                        aria-label={c}
                         className={`w-7 h-7 rounded-full border-2 cursor-pointer ${
                           selectedAnnotation.color === c
                             ? 'border-slate-900 scale-110'
@@ -663,7 +891,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
                     <button
                       type="button"
                       onClick={() => updateSelectedText({ bold: !selectedAnnotation.bold })}
-                      aria-label="خط عريض"
+                      aria-label={t.bold}
                       className={`min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg border cursor-pointer ${
                         selectedAnnotation.bold
                           ? 'bg-slate-900 text-white border-slate-900'
@@ -675,7 +903,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
                     <button
                       type="button"
                       onClick={() => updateSelectedText({ align: 'right' })}
-                      aria-label="محاذاة لليمين"
+                      aria-label={t.alignRight}
                       className={`min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg border cursor-pointer ${
                         selectedAnnotation.align === 'right'
                           ? 'bg-slate-900 text-white border-slate-900'
@@ -687,7 +915,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
                     <button
                       type="button"
                       onClick={() => updateSelectedText({ align: 'center' })}
-                      aria-label="توسيط"
+                      aria-label={t.alignCenter}
                       className={`min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg border cursor-pointer ${
                         selectedAnnotation.align === 'center'
                           ? 'bg-slate-900 text-white border-slate-900'
@@ -699,7 +927,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
                     <button
                       type="button"
                       onClick={() => updateSelectedText({ align: 'left' })}
-                      aria-label="محاذاة لليسار"
+                      aria-label={t.alignLeft}
                       className={`min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg border cursor-pointer ${
                         selectedAnnotation.align === 'left'
                           ? 'bg-slate-900 text-white border-slate-900'
@@ -722,7 +950,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
                     }
                     className="w-4 h-4 accent-red-600 rounded"
                   />
-                  <span>خلفية بيضاء لتغطية نص قديم تحته</span>
+                  <span>{t.whiteBgCover}</span>
                 </label>
               </div>
             )}
@@ -733,8 +961,8 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-bold text-slate-900">
                     {selectedAnnotation.type === 'signature'
-                      ? 'تعديل حجم وموضع التوقيع'
-                      : 'تعديل الصورة المدرجة'}
+                      ? t.editSigProps
+                      : t.editImgProps}
                   </span>
                   <button
                     type="button"
@@ -742,13 +970,13 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
                     className="min-h-[36px] px-2.5 flex items-center gap-1 rounded-lg text-xs font-medium text-red-600 hover:bg-red-50 cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" />
-                    <span>حذف</span>
+                    <span>{t.delete}</span>
                   </button>
                 </div>
 
                 <div>
                   <div className="flex justify-between text-xs text-slate-600 mb-1">
-                    <span>الحجم</span>
+                    <span>{t.size}</span>
                     <span className="font-mono-num font-semibold">
                       {Math.round(selectedAnnotation.width * 100)}%
                     </span>
@@ -769,7 +997,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
 
                 <div>
                   <div className="flex justify-between text-xs text-slate-600 mb-1">
-                    <span>الشفافية</span>
+                    <span>{t.opacity}</span>
                     <span className="font-mono-num font-semibold">
                       {Math.round((selectedAnnotation.opacity ?? 1) * 100)}%
                     </span>
@@ -792,7 +1020,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
                     onClick={() => onApplyToAllPages(selectedAnnotation)}
                     className="w-full min-h-[40px] px-3 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 cursor-pointer"
                   >
-                    تطبيق على جميع الصفحات ({totalPages})
+                    {t.applyToAll(totalPages)}
                   </button>
                 )}
               </div>
@@ -802,7 +1030,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-bold text-slate-900">
-                    {tool === 'pen' ? 'خصائص القلم الحر' : 'خصائص التظليل'}
+                    {tool === 'pen' ? t.penProps : t.highlightProps}
                   </span>
                   <div className="flex items-center gap-1.5">
                     {(tool === 'pen' ? COLOR_SWATCHES : HIGHLIGHT_SWATCHES).map((c) => (
@@ -825,7 +1053,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
                 {tool === 'pen' && (
                   <div>
                     <div className="flex justify-between text-xs text-slate-600 mb-1">
-                      <span>سُمك الخط</span>
+                      <span>{t.strokeWidth}</span>
                       <span className="font-mono-num">{strokeWidth}</span>
                     </div>
                     <input
@@ -857,7 +1085,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
             }`}
           >
             <MousePointer className="w-5 h-5" />
-            <span>تحريك</span>
+            <span>{t.toolMove}</span>
           </button>
 
           <button
@@ -866,7 +1094,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
             className="min-h-[48px] min-w-[60px] px-2.5 rounded-xl flex flex-col items-center justify-center gap-1 text-[11px] font-medium shrink-0 cursor-pointer text-slate-700 hover:bg-slate-100"
           >
             <TypeIcon className="w-5 h-5" />
-            <span>إضافة نص</span>
+            <span>{t.toolAddText}</span>
           </button>
 
           <button
@@ -875,7 +1103,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
             className="min-h-[48px] min-w-[68px] px-2.5 rounded-xl flex flex-col items-center justify-center gap-1 text-[11px] font-medium shrink-0 cursor-pointer text-slate-700 hover:bg-slate-100"
           >
             <Replace className="w-5 h-5" />
-            <span>تعديل نص</span>
+            <span>{t.toolEditText}</span>
           </button>
 
           <button
@@ -884,7 +1112,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
             className="min-h-[48px] min-w-[64px] px-2.5 rounded-xl flex flex-col items-center justify-center gap-1 text-[11px] font-medium shrink-0 cursor-pointer text-slate-700 hover:bg-slate-100"
           >
             <ImagePlus className="w-5 h-5" />
-            <span>إدراج صورة</span>
+            <span>{t.toolAddImg}</span>
           </button>
 
           <button
@@ -893,7 +1121,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
             className="min-h-[48px] min-w-[60px] px-2.5 rounded-xl flex flex-col items-center justify-center gap-1 text-[11px] font-medium shrink-0 cursor-pointer text-slate-700 hover:bg-slate-100"
           >
             <PenTool className="w-5 h-5" />
-            <span>توقيع</span>
+            <span>{t.toolSign}</span>
           </button>
 
           <button
@@ -909,7 +1137,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
             }`}
           >
             <Pen className="w-5 h-5" />
-            <span>قلم</span>
+            <span>{t.toolPen}</span>
           </button>
 
           <button
@@ -925,7 +1153,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
             }`}
           >
             <Highlighter className="w-5 h-5" />
-            <span>تظليل</span>
+            <span>{t.toolHighlight}</span>
           </button>
 
           <button
@@ -938,7 +1166,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
             }`}
           >
             <Stamp className="w-5 h-5" />
-            <span>علامة مائية</span>
+            <span>{t.toolWatermark}</span>
           </button>
         </div>
       </div>
@@ -970,7 +1198,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
             <div className="md:hidden w-10 h-1.5 bg-slate-300 rounded-full mx-auto my-3" />
             <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
               <h3 className="text-base font-bold text-slate-900">
-                اختر سطراً لتعديله واستبداله
+                {t.pickLineTitle}
               </h3>
               <button
                 type="button"
@@ -983,25 +1211,25 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
             <div className="p-4 overflow-y-auto space-y-2">
               {loadingBlocks ? (
                 <p className="text-sm text-slate-500 py-8 text-center">
-                  جاري قراءة نصوص الصفحة...
+                  {t.readingText}
                 </p>
               ) : detectedBlocks.length === 0 ? (
                 <div className="py-8 text-center space-y-2">
                   <p className="text-sm text-slate-700 font-medium">
-                    لم يتم العثور على نصوص رقمية مباشرة في هذه الصفحة.
+                    {t.noDigitalTextTitle}
                   </p>
                   <p className="text-xs text-slate-500">
-                    إذا كانت الصفحة ممسوحة ضوئياً كصورة، يمكنك استخدام أداة إضافة نص بخلفية بيضاء لتغطية الجزء المطلوب أو استخدام أداة OCR في المحول.
+                    {t.noDigitalTextDesc}
                   </p>
                   <button
                     type="button"
                     onClick={() => {
                       setShowExistingTextSheet(false);
-                      addTextBox({ backgroundColor: '#FFFFFF', text: 'نص بديل' });
+                      addTextBox({ backgroundColor: '#FFFFFF', text: t.replacementText });
                     }}
                     className="mt-2 min-h-[44px] px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-medium cursor-pointer"
                   >
-                    إضافة صندوق نص بخلفية بيضاء
+                    {t.addWhiteBgBox}
                   </button>
                 </div>
               ) : (
@@ -1020,7 +1248,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
                         backgroundColor: '#FFFFFF',
                       });
                     }}
-                    className="w-full text-right p-3 rounded-xl border border-slate-200 hover:border-red-300 hover:bg-red-50/30 transition-colors cursor-pointer"
+                    className={`w-full ${isRtl ? 'text-right' : 'text-left'} p-3 rounded-xl border border-slate-200 hover:border-red-300 hover:bg-red-50/30 transition-colors cursor-pointer`}
                   >
                     <p className="text-sm text-slate-900 line-clamp-2">{b.text}</p>
                   </button>
@@ -1043,7 +1271,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
           >
             <div className="md:hidden w-10 h-1.5 bg-slate-300 rounded-full mx-auto" />
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-slate-900">العلامة المائية للمستند</h3>
+              <h3 className="text-base font-bold text-slate-900">{t.watermarkModalTitle}</h3>
               <button
                 type="button"
                 onClick={() => setShowWatermarkModal(false)}
@@ -1054,7 +1282,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
             </div>
 
             <label className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer">
-              <span className="text-sm font-medium text-slate-800">تفعيل العلامة المائية</span>
+              <span className="text-sm font-medium text-slate-800">{t.enableWatermark}</span>
               <input
                 type="checkbox"
                 checked={watermark.enabled}
@@ -1067,7 +1295,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
 
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">
-                نص العلامة المائية
+                {t.watermarkTextLabel}
               </label>
               <input
                 type="text"
@@ -1075,7 +1303,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
                 onChange={(e) =>
                   setWatermark((w) => ({ ...w, text: e.target.value, enabled: true }))
                 }
-                placeholder="مثال: سري للغاية / نسخة أصلية"
+                placeholder={t.watermarkPlaceholder}
                 className="w-full min-h-[44px] rounded-xl border border-slate-200 px-3 text-sm"
               />
             </div>
@@ -1083,7 +1311,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <div className="flex justify-between text-xs text-slate-600 mb-1">
-                  <span>الشفافية</span>
+                  <span>{t.opacity}</span>
                   <span className="font-mono-num">{Math.round(watermark.opacity * 100)}%</span>
                 </div>
                 <input
@@ -1099,7 +1327,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
               </div>
               <div>
                 <div className="flex justify-between text-xs text-slate-600 mb-1">
-                  <span>الميل</span>
+                  <span>{t.angle}</span>
                   <span className="font-mono-num">{watermark.angle}°</span>
                 </div>
                 <input
@@ -1120,7 +1348,7 @@ export const PageAnnotator: React.FC<PageAnnotatorProps> = ({
               onClick={() => setShowWatermarkModal(false)}
               className="w-full min-h-[44px] rounded-xl bg-slate-900 text-white text-sm font-semibold cursor-pointer"
             >
-              تطبيق
+              {t.apply}
             </button>
           </div>
         </div>
