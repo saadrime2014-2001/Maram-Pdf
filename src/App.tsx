@@ -29,6 +29,9 @@ const t = {
     sampleReady: 'تم تجهيز المستند التجريبي. اضغط على أي صفحة لتعديلها.',
     sampleError: 'تعذر إنشاء الملف التجريبي.',
     deleted: 'تم حذف الملف من السجل المحلي.',
+    convertTitle: 'المحول',
+    editTitle: 'المحرر',
+    filesTitle: 'ملفاتي',
   },
   en: {
     opened: 'Opened file',
@@ -38,6 +41,9 @@ const t = {
     sampleReady: 'Sample document ready. Tap any page to edit.',
     sampleError: 'Could not create sample file.',
     deleted: 'File deleted from local history.',
+    convertTitle: 'Converter',
+    editTitle: 'Editor',
+    filesTitle: 'Files',
   },
   fr: {
     opened: 'Fichier ouvert',
@@ -47,15 +53,21 @@ const t = {
     sampleReady: 'Document exemple prêt. Touchez une page pour modifier.',
     sampleError: 'Impossible de créer le fichier exemple.',
     deleted: 'Fichier supprimé de l\'historique local.',
+    convertTitle: 'Convertisseur',
+    editTitle: 'Éditeur',
+    filesTitle: 'Fichiers',
   },
   es: {
     opened: 'Archivo abierto',
     openError: 'No se pudo abrir el PDF. Compruebe el archivo.',
-    imported: 'PDF importado con éxito.',
+    imported: 'PDF importé con éxito.',
     importError: 'No se pudo leer el archivo PDF del sistema.',
     sampleReady: 'Documento de muestra listo. Toca cualquier página.',
     sampleError: 'No se pudo crear el archivo de muestra.',
     deleted: 'Archivo eliminado del historial local.',
+    convertTitle: 'Convertidor',
+    editTitle: 'Editor',
+    filesTitle: 'Archivos',
   },
 };
 
@@ -63,7 +75,7 @@ export default function App() {
   const [section, setSection] = useState<AppSection>('home');
   const [convertMode, setConvertMode] = useState<ConvertMode>('img-to-pdf');
   const [editMode, setEditMode] = useState<EditMode>('pages');
-  const [lang, setLang] = useState<'ar' | 'en' | 'fr' | 'es'>('es'); // تم تعيين الإسبانية كاللغة الافتتاحية
+  const [lang, setLang] = useState<'ar' | 'en' | 'fr' | 'es'>('es'); // اللغة الافتتاحية الإسبانية
   const [activePdf, setActivePdf] = useState<{
     name: string;
     bytes: Uint8Array;
@@ -208,10 +220,10 @@ export default function App() {
           subViewTitle={
             section !== 'home'
               ? section === 'convert'
-                ? 'Converter / تحويل'
+                ? t[lang].convertTitle
                 : section === 'edit'
-                  ? 'Editor / محرر'
-                  : 'Files / ملفاتي'
+                  ? t[lang].editTitle
+                  : t[lang].filesTitle
               : undefined
           }
           onBackFromSubView={
