@@ -64,7 +64,6 @@ const translations = {
     ],
     processing: 'جاري المعالجة...',
     wait: 'يرجى الانتظار',
-    // Mode 1
     imgToPdfTitle: 'تحويل الصور إلى ملف PDF',
     imgToPdfDesc: 'التقط صوراً بالكاميرا أو اختر من معرض الهاتف ورتبها بسهولة',
     camera: 'الكاميرا',
@@ -81,7 +80,6 @@ const translations = {
     download: 'تنزيل',
     share: 'مشاركة',
     openInEditor: 'فتح الملف في المحرر',
-    // OCR
     ocrTitle: 'التعرف الضوئي على النص (OCR)',
     ocrDesc: 'استخرج النصوص العربية والإنجليزية من الصور أو ملفات PDF الممسوحة ضوئياً وحوّلها إلى مستند قابل للبحث والتحرير.',
     shootPage: 'تصوير صفحة',
@@ -97,22 +95,33 @@ const translations = {
     exportWord: 'تصدير Word (.docx)',
     downloadTxt: 'تنزيل نص (.txt)',
     cleanTextPdf: 'PDF نصي نظيف',
-    // PDF to Images
     pdfToImgTitle: 'تحويل PDF إلى صور',
     changeFile: 'تغيير الملف',
     selectPdf: 'اختيار PDF',
     convertNow: 'تحويل الآن',
     downloadAllZip: 'تنزيل الكل (ZIP)',
-    // PDF to Word
     pdfToWordTitle: 'تحويل PDF إلى Word أو نص',
     extractTexts: 'استخراج النصوص',
     ocrHint: 'الملف ممسوح كصورة؟ جرّب OCR',
-    // Word to PDF
     wordToPdfTitle: 'تحويل Word أو نص إلى PDF',
     wordToPdfDesc: 'ارفع ملف DOCX أو TXT أو اكتب مستندك مباشرة بخط عربي واضح',
     uploadWordTxt: 'رفع ملف Word / TXT',
     docTitlePlaceholder: 'عنوان المستند (اختياري)',
     docTextPlaceholder: 'اكتب أو الصق النص هنا لتحويله إلى صفحات PDF منسقة...',
+    successImgToPdf: 'تم تحويل الصور إلى ملف PDF بنجاح.',
+    successOcr: 'تم استخراج النص بنجاح!',
+    successSearchablePdf: 'تم إنشاء ملف PDF قابل للبحث بنجاح.',
+    successPdfToImg: (count: number) => `تم تحويل ${count} صفحات إلى صور.`,
+    successTextExtracted: 'تم استخراج النصوص بنجاح.',
+    successWordExport: 'تم تنزيل ملف Word (.docx).',
+    successWordImport: 'تم استيراد محتوى المستند.',
+    successPdfCreated: 'تم إنشاء ملف PDF بنجاح.',
+    errorReadImg: 'تعذر قراءة إحدى الصور المختارة.',
+    errorPdfCreate: 'حدث خطأ أثناء إنشاء ملف PDF.',
+    errorPdfToImg: 'تعذر تحويل الملف إلى صور.',
+    errorExtractText: 'تعذر استخراج النصوص من هذا الملف.',
+    errorReadWord: 'تعذر قراءة الملف.',
+    errorOcr: 'تعذر إتمام التعرف الضوئي.',
   },
   en: {
     modes: [
@@ -168,6 +177,20 @@ const translations = {
     uploadWordTxt: 'Upload Word / TXT',
     docTitlePlaceholder: 'Document title (optional)',
     docTextPlaceholder: 'Type or paste text here to format into PDF pages...',
+    successImgToPdf: 'Images converted to PDF successfully.',
+    successOcr: 'Text extracted successfully!',
+    successSearchablePdf: 'Searchable PDF created successfully.',
+    successPdfToImg: (count: number) => `Converted ${count} pages to images.`,
+    successTextExtracted: 'Texts extracted successfully.',
+    successWordExport: 'Word (.docx) downloaded.',
+    successWordImport: 'Document content imported.',
+    successPdfCreated: 'PDF created successfully.',
+    errorReadImg: 'Could not read one of the selected images.',
+    errorPdfCreate: 'Error creating PDF file.',
+    errorPdfToImg: 'Could not convert file to images.',
+    errorExtractText: 'Could not extract text from this file.',
+    errorReadWord: 'Could not read file.',
+    errorOcr: 'Could not complete OCR.',
   },
   fr: {
     modes: [
@@ -223,6 +246,20 @@ const translations = {
     uploadWordTxt: 'Télécharger Word / TXT',
     docTitlePlaceholder: 'Titre du document (optionnel)',
     docTextPlaceholder: 'Tapez ou collez le texte ici...',
+    successImgToPdf: 'Images converties en PDF avec succès.',
+    successOcr: 'Texte extrait avec succès !',
+    successSearchablePdf: 'PDF interrogeable créé avec succès.',
+    successPdfToImg: (count: number) => `${count} pages converties en images.`,
+    successTextExtracted: 'Textes extraits avec succès.',
+    successWordExport: 'Word (.docx) téléchargé.',
+    successWordImport: 'Contenu du document importé.',
+    successPdfCreated: 'PDF créé avec succès.',
+    errorReadImg: 'Impossible de lire l’image.',
+    errorPdfCreate: 'Erreur lors de la création du PDF.',
+    errorPdfToImg: 'Impossible de convertir en images.',
+    errorExtractText: 'Impossible d’extraire le texte.',
+    errorReadWord: 'Impossible de lire le fichier.',
+    errorOcr: 'Impossible de terminer l’OCR.',
   },
   es: {
     modes: [
@@ -278,6 +315,20 @@ const translations = {
     uploadWordTxt: 'Subir Word / TXT',
     docTitlePlaceholder: 'Título del documento (opcional)',
     docTextPlaceholder: 'Escribe o pega el texto aquí para formatearlo en PDF...',
+    successImgToPdf: 'Imágenes convertidas a PDF con éxito.',
+    successOcr: '¡Texto extraído con éxito!',
+    successSearchablePdf: 'PDF con búsqueda creado con éxito.',
+    successPdfToImg: (count: number) => `Se convirtieron ${count} páginas a imágenes.`,
+    successTextExtracted: 'Textos extraídos con éxito.',
+    successWordExport: 'Word (.docx) descargado.',
+    successWordImport: 'Contenido del documento importado.',
+    successPdfCreated: 'PDF creado con éxito.',
+    errorReadImg: 'No se pudo leer una de las imágenes seleccionadas.',
+    errorPdfCreate: 'Error al crear el archivo PDF.',
+    errorPdfToImg: 'No se pudo convertir el archivo a imágenes.',
+    errorExtractText: 'No se pudo extraer texto de este archivo.',
+    errorReadWord: 'No se pudo leer el archivo.',
+    errorOcr: 'No se pudo completar el OCR.',
   },
 };
 
@@ -290,6 +341,7 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
   onOpenPdfInEditor,
 }) => {
   const t = translations[currentLang];
+  const isRtl = currentLang === 'ar';
   const [mode, setMode] = useState<ConvertMode>(initialMode);
   const [busy, setBusy] = useState(false);
   const [progressMsg, setProgressMsg] = useState('');
@@ -367,10 +419,10 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
             width: img.naturalWidth || 1000,
             height: img.naturalHeight || 1000,
           });
-        img.onerror = () => reject(new Error('تعذر قراءة الصورة'));
+        img.onerror = () => reject(new Error('Image error'));
         img.src = dataUrl;
       };
-      reader.onerror = () => reject(new Error('تعذر فتح الملف'));
+      reader.onerror = () => reject(new Error('File error'));
       reader.readAsDataURL(file);
     });
 
@@ -381,7 +433,7 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
       setImgQueue((prev) => [...prev, ...loaded]);
       setImgPdfResult(null);
     } catch {
-      onNotify('error', 'تعذر قراءة إحدى الصور المختارة.');
+      onNotify('error', t.errorReadImg);
     }
   };
 
@@ -404,9 +456,9 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
       const fileName = `images_${Date.now().toString().slice(-4)}.pdf`;
       setImgPdfResult({ name: fileName, bytes });
       await onSaveToHistory(fileName, bytes, imgQueue.length, 'Images to PDF');
-      onNotify('success', 'تم تحويل الصور إلى ملف PDF بنجاح.');
+      onNotify('success', t.successImgToPdf);
     } catch {
-      onNotify('error', 'حدث خطأ أثناء إنشاء ملف PDF.');
+      onNotify('error', t.errorPdfCreate);
     } finally {
       setBusy(false);
       setProgressMsg('');
@@ -431,9 +483,9 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
     try {
       const imgs = await pdfToImages(currentPdf.bytes, imgFormat, 2);
       setExportedImages(imgs);
-      onNotify('success', `تم تحويل ${imgs.length} صفحات إلى صور.`);
+      onNotify('success', t.successPdfToImg(imgs.length));
     } catch {
-      onNotify('error', 'تعذر تحويل الملف إلى صور.');
+      onNotify('error', t.errorPdfToImg);
     } finally {
       setBusy(false);
       setProgressMsg('');
@@ -457,12 +509,12 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
       const joined = pages.map((p) => p.text).filter(Boolean).join('\n\n');
       setEditableText(joined);
       if (!joined.trim()) {
-        onNotify('info', 'هذا الملف يبدو ممسوحاً ضوئياً كصور. استخدم تبويب التعرف الضوئي OCR.');
+        onNotify('info', t.ocrHint);
       } else {
-        onNotify('success', 'تم استخراج النصوص بنجاح.');
+        onNotify('success', t.successTextExtracted);
       }
     } catch {
-      onNotify('error', 'تعذر استخراج النصوص من هذا الملف.');
+      onNotify('error', t.errorExtractText);
     } finally {
       setBusy(false);
       setProgressMsg('');
@@ -470,16 +522,16 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
   };
 
   const handleDownloadWordFromText = async (textContent: string, baseName: string) => {
-    const paragraphs = textContent.split(/\n{2,}/).map((t, i) => ({
+    const paragraphs = textContent.split(/\n{2,}/).map((txt, i) => ({
       pageNumber: i + 1,
-      text: t,
+      text: txt,
     }));
     const blob = await textToDocxBlob(
       paragraphs.length > 0 ? paragraphs : [{ pageNumber: 1, text: textContent }],
       baseName
     );
     downloadBlob(blob, `${baseName}.docx`);
-    onNotify('success', 'تم تنزيل ملف Word (.docx).');
+    onNotify('success', t.successWordExport);
   };
 
   const handleUploadWordOrText = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -499,9 +551,9 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
         setDocTitle(file.name.replace(/\.(txt|md)$/i, ''));
       }
       setTextPdfResult(null);
-      onNotify('success', 'تم استيراد محتوى المستند.');
+      onNotify('success', t.successWordImport);
     } catch {
-      onNotify('error', 'تعذر قراءة الملف.');
+      onNotify('error', t.errorReadWord);
     } finally {
       setBusy(false);
       setProgressMsg('');
@@ -519,9 +571,9 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
       const name = `${docTitle.trim() || 'document'}.pdf`;
       setTextPdfResult({ name, bytes });
       await onSaveToHistory(name, bytes, count, 'Text to PDF');
-      onNotify('success', 'تم إنشاء ملف PDF بنجاح.');
+      onNotify('success', t.successPdfCreated);
     } catch {
-      onNotify('error', 'حدث خطأ أثناء إنشاء ملف PDF.');
+      onNotify('error', t.errorPdfCreate);
     } finally {
       setBusy(false);
       setProgressMsg('');
@@ -602,9 +654,9 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
           .filter(Boolean)
           .join('\n\n')
       );
-      onNotify('success', 'تم استخراج النص بنجاح!');
+      onNotify('success', t.successOcr);
     } catch {
-      onNotify('error', 'تعذر إتمام التعرف الضوئي.');
+      onNotify('error', t.errorOcr);
     } finally {
       setBusy(false);
       setProgressMsg('');
@@ -639,9 +691,9 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
       const outName = `${base}_searchable.pdf`;
       setSearchablePdf({ name: outName, bytes });
       await onSaveToHistory(outName, bytes, count, 'OCR Searchable PDF');
-      onNotify('success', 'تم إنشاء ملف PDF قابل للبحث بنجاح.');
+      onNotify('success', t.successSearchablePdf);
     } catch {
-      onNotify('error', 'حدث خطأ أثناء بناء PDF.');
+      onNotify('error', t.errorPdfCreate);
     } finally {
       setBusy(false);
       setProgressMsg('');
@@ -649,7 +701,7 @@ export const ConverterStudio: React.FC<ConverterStudioProps> = ({
   };
 
   return (
-    <div className={`max-w-6xl mx-auto px-4 md:px-6 py-5 pb-24 md:pb-12 space-y-6 ${currentLang === 'ar' ? 'text-right' : 'text-left'}`}>
+    <div className={`max-w-6xl mx-auto px-4 md:px-6 py-5 pb-24 md:pb-12 space-y-6 ${isRtl ? 'text-right' : 'text-left'}`}>
       {/* Mode Switcher */}
       <div className="flex items-center gap-1.5 p-1.5 bg-slate-200/70 rounded-2xl overflow-x-auto no-scrollbar">
         {t.modes.map((m) => (
