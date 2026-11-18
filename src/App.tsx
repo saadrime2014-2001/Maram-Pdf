@@ -63,7 +63,7 @@ export default function App() {
   const [section, setSection] = useState<AppSection>('home');
   const [convertMode, setConvertMode] = useState<ConvertMode>('img-to-pdf');
   const [editMode, setEditMode] = useState<EditMode>('pages');
-  const [lang, setLang] = useState<'ar' | 'en' | 'fr' | 'es'>('ar'); // حالة اللغة الحالية
+  const [lang, setLang] = useState<'ar' | 'en' | 'fr' | 'es'>('es'); // تم تعيين الإسبانية كاللغة الافتتاحية
   const [activePdf, setActivePdf] = useState<{
     name: string;
     bytes: Uint8Array;
